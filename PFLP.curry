@@ -2,7 +2,7 @@
 
 module PFLP where
 
-import SetFunctions (Values,mapValues,foldValues,set0,set1,set2,selectValue,chooseValue)
+import SetFunctions (Values,mapValues,foldValues,set0,set1,set2,set3,selectValue,chooseValue)
 import List (delete,sum,sort,sortBy,maximum)
 import Float (exp,i2f,pi,round,sqrt,(^.))
 import Combinators (oneOf)
@@ -167,6 +167,21 @@ singleton x = [x]
 enum :: [(a -> Dist a,Float)] -> Dist (a -> Dist a)
 enum = flatDist . map (\(f,float) -> Dist f (Prob float))
 
+-- (*.) :: Eq a => Int -> (a -> Dist a) -> a -> Dist a
+-- n *. t = chooseValue . mapValues selectValue . set0 . set3 (*..) n t
+
+-- (*..) :: Int -> (a -> Dist a) -> a -> Dist a
+-- n *.. t = case n of
+--               0 -> certainly
+--               1 -> t
+--               _ -> t >>: ((n-1) *.. t)
+
+-- -- g potentially non-deterministic!
+-- (>>:) :: (a -> Dist a) -> (a -> Dist a) -> a -> Dist a
+-- f >>: g = \x -> let d@(Dist y p) = g x
+--                     Dist z q     = f y
+--                 in Dist z (p*q)
+
 (*.) :: Eq a => Int -> (a -> Dist a) -> a -> Dist a
 n *. t = head . (n *.. t)
 
@@ -180,7 +195,6 @@ n *.. t = case n of
 f >>: g = \x -> let ds@(Dist y p:_) = g x
                     Dist z q        = f y
                 in Dist z (p*q) : ds
-
 
 ------------------------------
 ----- Examples           -----
