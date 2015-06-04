@@ -2,16 +2,50 @@
 
 module PFLP where
 
-import SetFunctions (Values,mapValues,foldValues,set0,set1,selectValue)
-import List (delete,sum)
+import SetFunctions (Values,mapValues,foldValues,set0,set1,set2,selectValue,chooseValue)
+import List (delete,sum,sort,sortBy,maximum)
 import Float (exp,i2f,pi,round,sqrt,(^.))
 import Combinators (oneOf)
 
 data Probability = Prob Float
+  deriving (Eq,Ord)
+
 unP :: Probability -> Float
 unP (Prob f) = f
 
 data Dist a = Dist a Probability
+  deriving (Eq,Ord)
+
+instance (Ord a, Show a) => Show (Dist a) where
+  show = show . toShowD
+
+data ShowDist a = ShowDist [(a,Probability)]
+  deriving (Eq,Ord)
+
+instance (Ord a, Show a) => Show (ShowDist a) where
+  show (ShowDist xs) = concatMap (\(x,p)-> showR w x ++ ' ' : show p ++ "\n") (sortP (norm xs))
+   where
+    w = maximum (map (length . show . fst) xs)
+    showR n x = replicate (n-length s) ' ' ++ s
+      where s = show x
+
+sortP :: [(a,Probability)] -> [(a,Probability)]
+sortP = sortBy (\x y -> snd y <= snd x)
+
+toShowD :: Dist a -> ShowDist a
+toShowD dist =
+  foldValues (\ (ShowDist xs) (ShowDist ys) -> ShowDist (xs ++ ys)) (ShowDist [])
+    $ mapValues (\(Dist v p) -> ShowDist [(v,p)]) (set0 dist)
+
+norm :: (Ord a, Eq a) => [(a,Probability)] -> [(a,Probability)]
+norm = accumBy (==) . sort
+
+accumBy :: Num b => (a -> a -> Bool) -> [(a,b)] -> [(a,b)]
+accumBy _ []   = []
+accumBy _ [x]  = [x]
+accumBy f ((x,p):(y,q):xs)
+  | f x y     = accumBy f ((x,p+q):xs)
+  | otherwise = (x,p) : accumBy f ((y,q):xs)
 
 type Spread a = [a] -> Dist a
 
@@ -91,12 +125,19 @@ unfoldT (Dist f p) x = Dist y (p*q)
 sequence :: [a -> Dist a] -> a -> Dist a
 sequence = foldl (>@>) certainly
 
-filterDist :: (a -> Bool) -> Dist a -> Probability
-filterDist p dist = probability $
-  foldValues (\(Dist x q1) d@(Dist _ q2) ->
-                if p x then Dist x (q1 + q2) else d)
+extractDist :: Dist a -> Probability
+extractDist fDist =  probability $
+  foldValues (\ (Dist x q1) (Dist _ q2) -> Dist x (q1 + q2))
              fail
-             (set0 dist)
+             (set0 fDist)
+  -- probability $
+  -- foldValues (\(Dist x q1) d@(Dist _ q2) ->
+  --               if p x then Dist x (q1 + q2) else d)
+  --            fail
+  --            (set0 dist)
+
+filterDist :: (a -> Bool) -> Dist a -> Dist a
+filterDist p d@(Dist v _) | p v = d
 
 mapDist :: (a -> b) -> Dist a -> Dist b
 mapDist f (Dist x p) = Dist (f x) p
@@ -119,6 +160,28 @@ select n = mapDist (reverse . fst) . selectMany n
 valuesToList :: Values a -> [a]
 valuesToList = foldValues (\v acc -> v ++ acc) [] . mapValues (: [])
 
+
+singleton :: Dist a -> [Dist a]
+singleton x = [x]
+
+enum :: [(a -> Dist a,Float)] -> Dist (a -> Dist a)
+enum = flatDist . map (\(f,float) -> Dist f (Prob float))
+
+(*.) :: Eq a => Int -> (a -> Dist a) -> a -> Dist a
+n *. t = head . (n *.. t)
+
+(*..) :: Int -> (a -> Dist a) -> a -> [Dist a]
+n *.. t = case n of
+              0 -> singleton . certainly
+              1 -> singleton . t
+              _ -> t >>: ((n-1) *.. t)
+
+(>>:) :: (a -> Dist a) -> (a -> [Dist a]) -> a -> [Dist a]
+f >>: g = \x -> let ds@(Dist y p:_) = g x
+                    Dist z q        = f y
+                in Dist z (p*q) : ds
+
+
 ------------------------------
 ----- Examples           -----
 ------------------------------
@@ -128,18 +191,18 @@ die = uniform [1..6]
 
 dieSixes :: Int -> Int -> Probability
 dieSixes count rounds =
-  filterDist ((>= count) . length . filter (== 6)) (dice rounds)
+  extractDist (filterDist ((>= count) . length . filter (== 6)) (dice rounds))
 
 data Marble = R | G | B
   deriving Eq
 
 rgbExample :: Probability
-rgbExample = filterDist (== [R,G,B]) (select 3 [R,R,G,G,B])
+rgbExample = extractDist (filterDist (== [R,G,B]) (select 3 [R,R,G,G,B]))
 
 
 type Height = Int
 data Tree = Alive Height | Hit Height | Fallen
-  deriving (Eq,Show)
+  deriving (Eq,Ord,Show)
 
 grow :: Tree -> Dist Tree
 grow (Alive h) = normal [Alive k | k <- [h+1,h+2,h+3,h+4,h+5]]
@@ -155,22 +218,5 @@ evolve t = case t of
   Alive _ -> unfoldT (enum [(grow,0.9),(hit,0.04),(fall,0.06)]) t
   _       -> certainly t
 
-enum :: [(a -> Dist a,Float)] -> Dist (a -> Dist a)
-enum = flatDist . map (\(f,float) -> Dist f (Prob float))
-
 tree :: Int -> Tree -> Dist Tree
 tree n = n *. evolve
-
-(*.) :: Eq a => Int -> (a -> Dist a) -> a -> Dist a
--- (*.) x f y = failed
-(n *. t) val = selectValue  (set1 (n *.. t) val)
-
-(*..) :: Int -> (a -> Dist a) -> a -> Dist a
-0 *.. _ = certainly
-1 *.. t = t
-n *.. t = t >>: ((n-1) *.. t)
-
-(>>:) :: (a -> Dist a) -> (a -> Dist a) -> a -> Dist a
-f >>: g = \x -> let d@(Dist y p) = g x
-                    Dist z q     = f y
-                in Dist z (p*q) ? d
