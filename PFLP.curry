@@ -202,15 +202,21 @@ enum = flatDist . map (\(f,float) -> Dist f (Prob float))
 --                     Dist z q     = f y
 --                 in Dist z (p*q)
 
+-- Applies a given transition `n`-times
 (*.) :: Eq a => Int -> (a -> Dist a) -> a -> Dist a
 n *. t = head . (n *.. t)
 
+-- Applies the a given transition `n` times and
+--  traces each step of the evolution
 (*..) :: Int -> (a -> Dist a) -> a -> [Dist a]
 n *.. t = case n of
               0 -> singleton . certainly
               1 -> singleton . t
               _ -> t >>: ((n-1) *.. t)
 
+-- Applies a transition function to all entries of a trace
+--  that are produced by the given tracing function,
+--  thus, yield a trace
 (>>:) :: (a -> Dist a) -> (a -> [Dist a]) -> a -> [Dist a]
 f >>: g = \x -> let ds@(Dist y p:_) = g x
                     Dist z q        = f y
@@ -254,3 +260,15 @@ evolve t = case t of
 
 tree :: Int -> Tree -> Dist Tree
 tree n = n *. evolve
+
+-- ---------------------------------------------------------
+-- Randomisation
+-- ---------------------------------------------------------
+
+pick :: Dist a -> a
+pick = value . selectValue . set0
+
+random :: (a -> Dist a) -> a -> a
+random f = pick . f
+
+-- rDist :: Ord a => [a] -> Dist a

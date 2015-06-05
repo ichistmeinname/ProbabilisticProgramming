@@ -25,7 +25,10 @@ possibleResults = [minBound .. maxBound]
 -- data Score = Int ::: Int
 
 weakerThan :: (Team,Int) -> (Team,Int) -> Bool
-weakerThan (_,n) (_,m) = n < m
+weakerThan (_,n) (_,m) = n <= m
+
+strongerThan :: (Team,Int) -> (Team,Int) -> Bool
+strongerThan e1 e2 = not (weakerThan e1 e2)
 
 points :: Result -> (Int,Int)
 points HomeVictory = (3,0)
@@ -79,18 +82,13 @@ updateTable mds table = (foldr recalculateTable table matches,matches)
   matches = concatMap playMatchDay mds
 
 sortTable :: Table -> Table
-sortTable = sortBy (\ (_,p1)(_,p2) -> p1 <= p2)
+sortTable = sortBy strongerThan
 
 match :: Team -> Team -> Match
 match t1 t2 = Match t1 t2 _
 
 playMatchDay :: Matchday -> [Match]
 playMatchDay = map (uncurry match)
-
-day31 = [ (Schalke,Stuttgart), (Wolfsburg,Hannover),
-          (Freiburg,Paderborn),(Mainz,HamburgerSV)]
-table30 = [(Freiburg,30),(Hannover, 29),
-           (HamburgerSV,28), (Paderborn, 28),(Stuttgart, 27)]
 
 matchDay31 :: Matchday
 matchDay31 =  [ (Schalke,Stuttgart), (Wolfsburg,Hannover), (Augsburg,Koeln)
@@ -127,42 +125,55 @@ currentTable =
 result :: Team -> Team -> Dist Match
 result t1 t2 = Match t1 t2 <$> uniform possibleResults
 
-func :: (a -> Dist b) -> [a] -> Dist [b]
-func f []     = certainly []
-func f (v:vs) = f v >>= \_ -> func f vs
+filterMatchdays :: [Team] -> [Matchday] -> [Matchday]
+filterMatchdays teams matchDays =
+    map (filter (\ (t1,t2) ->  any (`elem` teams)
+                                   [t1,t2]))
+        matchDays
 
-func2 :: [Dist a] -> Dist [a]
-func2 = foldr (\ (Dist v p) (Dist vs q) -> Dist (v:vs) (p*q)) (certainly [])
-
-test :: Dist [Match]
-test = traverse (uncurry result)
-                [(HamburgerSV,Bremen),(HamburgerSV,Schalke)]
-
-test1 :: [Dist Match]
-test1 = map (uncurry result)
-            [(HamburgerSV,Bremen),(HamburgerSV,Schalke)]
-
--- test1 :: Dist [Match]
--- test1 = func (\g -> mapDist (\p -> uncurry Match g p) gameProb)
---              [(HamburgerSV,Bremen),(HamburgerSV,Schalke)]
+relegationReduced :: Team
+                  -> [Matchday]
+                  -> Table
+                  -> Dist (Table,[Match])
+relegationReduced team mds curTable =
+  relegation team matchDays table
+ where
+  matchDays = filterMatchdays teams mds
+  table     = filter ((< pointsBound) . snd) curTable
+  teams     = map fst table
+  pointsBound = currentPoints team curTable + maxPoints mds
 
 relegation :: Team
             -> [Matchday]
             -> Table
-            -> Dist Table
-relegation team matchDays table =
-  filterDist (\ t -> length (dropWhile ((/= team) . fst)  (sortTable t))
-                            >= 3)
-            tmp
-  -- r
-  --   |> not (isEmpty (thereExistN 2 (newTable `without` team)
-  --      `suchThat` anySet (all (`weakerThan` teamEntry))))
-  --      -- `suchThatSet` all (`weakerThan` teamEntry)))
+            -> Dist (Table,[Match])
+relegation team matchDays table = liftA2l (,)
+  (filterDist  (\t -> length (filter (\ (t1,p1) -> t1 /= team && p1 < teamPoints t) t)
+                       >= 2)
+               newTable)
+  -- (filterDist (\ t -> length (dropWhile ((/= team) . fst)  t)
+  --                           >= 3)
+  --           (sortTable <$> newTable))
+  results
  where
+  teamPoints t = currentPoints team t
   results :: Dist [Match]
   results = traverse (uncurry result) (concat matchDays)
-  tmp :: Dist Table
-  tmp = foldr (recalculateTable) table <$> results
-  -- Dist a -> Dist b -> Dist c
+  newTable :: Dist Table
+  newTable = foldr (recalculateTable) table <$> results
+  liftA2l :: (a -> b -> c) -> Dist a -> Dist b -> Dist c
+  liftA2l f (Dist v p) (Dist w _) = Dist (f v w) p
 
-problem = foldValues (\(Dist _ p) (Dist x q) -> Dist x (p+q)) (certainly failed) (set3 relegation HamburgerSV (take 2 upcomingMatchdays) currentTable)
+problem = countDist HamburgerSV (take 2 upcomingMatchdays) currentTable
+problemSmall = countDist HamburgerSV [day31] table30
+
+countDist team mds table =
+  foldValues (\(Dist _ p) (Dist x q) -> Dist x (p+q))
+             (Dist ([],[]) 0.0)
+             (set3 relegationReduced team mds table)
+
+day31 = [ -- (Schalke,Stuttgart), --(Wolfsburg,Hannover),
+          (Freiburg,Paderborn),(Mainz,HamburgerSV)]
+table30 = [ -- (Freiburg,30),(Hannover, 29),
+           (HamburgerSV,28), (Paderborn, 28)]
+           --(Stuttgart, 27)]
