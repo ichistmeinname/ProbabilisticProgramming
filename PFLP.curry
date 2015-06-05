@@ -1,5 +1,4 @@
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
-
 module PFLP where
 
 import SetFunctions (Values,mapValues,foldValues,set0,set1,set2,set3,selectValue,chooseValue)
@@ -138,6 +137,27 @@ extractDist fDist =  probability $
 
 filterDist :: (a -> Bool) -> Dist a -> Dist a
 filterDist p d@(Dist v _) | p v = d
+
+(<*>) :: Dist (a -> b) -> Dist a -> Dist b
+Dist f p <*> Dist x q = Dist (f x) (p*q)
+
+(<$>) :: (a -> b) -> Dist a -> Dist b
+(<$>) = mapDist
+
+sequenceA :: [Dist a] -> Dist [a]
+sequenceA = traverse id
+
+traverse :: (a -> Dist b) -> [a] -> Dist [b]
+traverse f = foldr (liftA2 (:) . f) (pure [])
+
+-- foldA :: (a -> b -> Dist b) -> b -> [a] -> Dist b
+-- foldA f e = foldr (\x y -> f x y) e
+
+liftA2 :: (a -> b -> c) -> Dist a -> Dist b -> Dist c
+liftA2 f dA dB = f <$> dA <*> dB
+
+pure :: a -> Dist a
+pure x = Dist x 1.0
 
 mapDist :: (a -> b) -> Dist a -> Dist b
 mapDist f (Dist x p) = Dist (f x) p
