@@ -6,16 +6,18 @@ import PFLP
 
 import Prelude hiding ((>>=))
 import Maybe (fromJust)
+import List
+import SetFunctions
 
 data Team = Frankfurt | Gladbach | Dortmund | Paderborn | Leverkusen | Hannover
        | Hoffenheim | Muenchen | Hertha | Koeln | Freiburg | Mainz | Augsburg
        | Stuttgart | Bremen | HamburgerSV | Wolfsburg | Schalke
-  deriving (Eq,Show)
+  deriving (Eq,Show,Ord)
 
 data Match = Match Team Team Result
-  deriving (Eq,Show)
+  deriving (Eq,Show,Ord)
 data Result = AwayVictory | Draw | HomeVictory
-  deriving (Bounded,Enum,Eq,Show)
+  deriving (Bounded,Enum,Eq,Show,Ord)
 
 possibleResults :: [Result]
 possibleResults = [minBound .. maxBound]
@@ -30,6 +32,9 @@ points HomeVictory = (3,0)
 points Draw        = (1,1)
 points AwayVictory = (0,3)
 
+currentPoints :: Team -> Table -> Int
+currentPoints = lookup_
+
 matchPoints :: Match -> ((Team, Int),(Team, Int))
 matchPoints (Match t1 t2 res) = ((t1,res1),(t2,res2))
  where
@@ -40,6 +45,15 @@ type TableEntry = (Team,Int)
 
 type Matchday = [MatchdayEntry]
 type MatchdayEntry = (Team,Team)
+
+without :: Table -> Team -> Table
+without []         _ = []
+without (e@(t,_):ts) team
+  | t == team = ts
+  | otherwise = e : without ts team
+
+maxPoints :: [Matchday] -> Int
+maxPoints mds = fst (points (maxBound :: Result)) * length mds
 
 lookup_ :: Eq a => a -> [(a,b)] -> b
 lookup_ x = fromJust . lookup x
@@ -63,6 +77,9 @@ updateTable :: [Matchday] -> Table -> (Table,[Match])
 updateTable mds table = (foldr recalculateTable table matches,matches)
  where
   matches = concatMap playMatchDay mds
+
+sortTable :: Table -> Table
+sortTable = sortBy (\ (_,p1)(_,p2) -> p1 <= p2)
 
 match :: Team -> Team -> Match
 match t1 t2 = Match t1 t2 _
@@ -107,44 +124,45 @@ currentTable =
   ,(Freiburg, 30), (Hannover, 29), (HamburgerSV,28), (Paderborn, 28)
   ,(Stuttgart, 27)]
 
-gameProb :: Dist Result
-gameProb = uniform possibleResults
-
--- recalculateTable :: Match -> Table -> Table
--- recalculateTable (Match team1 team2 result) table =
---   addPoints team1 res1 (addPoints team2 res2 table)
---  where
---   (res1,res2) = points result
-
--- updateTableWith :: [Matchday]
---                 -> Table
---                 -> (Table,[Match])
--- updateTableWith mds table = (foldr recalculateTable table matches,matches)
---  where
---   -- gameProb :: Dist Result
---   -- Match t1 t2 :: Result -> Match
---   matches :: Dist [Match]
---   matches = mapDist (\r -> map (uncurry Match) mds) gameProb
-
-
--- relegation :: Team
---            -> [Matchday]
---            -> Table
---            -> Dist (Table,[Match])
--- relegation team mds curTable =
---   (newTable,results) = updateTableWith gameProb mds curTable
+result :: Team -> Team -> Dist Match
+result t1 t2 = Match t1 t2 <$> uniform possibleResults
 
 func :: (a -> Dist b) -> [a] -> Dist [b]
 func f []     = certainly []
-func f (v:vs) = f v >>= \v -> func f vs
+func f (v:vs) = f v >>= \_ -> func f vs
 
 func2 :: [Dist a] -> Dist [a]
 func2 = foldr (\ (Dist v p) (Dist vs q) -> Dist (v:vs) (p*q)) (certainly [])
 
-test :: [Dist Match]
-test = map (\g -> mapDist (\p -> uncurry Match g p) gameProb)
-           [(HamburgerSV,Bremen),(HamburgerSV,Schalke)]
+test :: Dist [Match]
+test = traverse (uncurry result)
+                [(HamburgerSV,Bremen),(HamburgerSV,Schalke)]
 
-test1 :: Dist [Match]
-test1 = func (\g -> mapDist (\p -> uncurry Match g p) gameProb)
-             [(HamburgerSV,Bremen),(HamburgerSV,Schalke)]
+test1 :: [Dist Match]
+test1 = map (uncurry result)
+            [(HamburgerSV,Bremen),(HamburgerSV,Schalke)]
+
+-- test1 :: Dist [Match]
+-- test1 = func (\g -> mapDist (\p -> uncurry Match g p) gameProb)
+--              [(HamburgerSV,Bremen),(HamburgerSV,Schalke)]
+
+relegation :: Team
+            -> [Matchday]
+            -> Table
+            -> Dist Table
+relegation team matchDays table =
+  filterDist (\ t -> length (dropWhile ((/= team) . fst)  (sortTable t))
+                            >= 3)
+            tmp
+  -- r
+  --   |> not (isEmpty (thereExistN 2 (newTable `without` team)
+  --      `suchThat` anySet (all (`weakerThan` teamEntry))))
+  --      -- `suchThatSet` all (`weakerThan` teamEntry)))
+ where
+  results :: Dist [Match]
+  results = traverse (uncurry result) (concat matchDays)
+  tmp :: Dist Table
+  tmp = foldr (recalculateTable) table <$> results
+  -- Dist a -> Dist b -> Dist c
+
+problem = foldValues (\(Dist _ p) (Dist x q) -> Dist x (p+q)) (certainly failed) (set3 relegation HamburgerSV (take 2 upcomingMatchdays) currentTable)
