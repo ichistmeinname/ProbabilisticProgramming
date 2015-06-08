@@ -25,7 +25,7 @@ possibleResults = [minBound .. maxBound]
 -- data Score = Int ::: Int
 
 weakerThan :: (Team,Int) -> (Team,Int) -> Bool
-weakerThan (_,n) (_,m) = n <= m
+weakerThan (t1,n) (t2,m) | t1 /= t2  = n <= m
 
 strongerThan :: (Team,Int) -> (Team,Int) -> Bool
 strongerThan e1 e2 = not (weakerThan e1 e2)
@@ -134,42 +134,77 @@ filterMatchdays teams matchDays =
 relegationReduced :: Team
                   -> [Matchday]
                   -> Table
-                  -> Dist (Table,[Match])
+                  -> Dist Table
 relegationReduced team mds curTable =
-  relegation team matchDays table
+  relegation team mds' table'
  where
-  matchDays = filterMatchdays teams mds
-  table     = filter ((< pointsBound) . snd) curTable
-  teams     = map fst table
+  (mds',table') = filterT (< pointsBound) mds curTable
   pointsBound = currentPoints team curTable + maxPoints mds
+
+-- relegation' :: Team
+--             -> [Matchday]
+--             -> Table
+--             -> Dist Table
+-- relegation' team [] curTable = pure []
+-- relegation' team (md:mds) curTable =
+--   relegation' team mds <*> relegationIteration team md curTable
+--   -- foldr (\md dTable -> relegationIteration team md <$> dTable)
+--   --       (pure curTable)
+--   --       mds
+
+-- relegationIteration :: Team
+--                     -> Matchday
+--                     -> Table
+--                     -> Dist Table
+-- relegationIteration team mds curTable =
+--   relegation team mds' table'
+--  where
+--   (mds',table') = filterRelegation team [mds] curTable
+
+filterT :: (Int -> Bool)
+        -> [Matchday]
+        -> Table
+        -> ([Matchday],Table)
+filterT cond mds curTable = (matchdays,table)
+ where
+  table = filter (cond . snd) curTable
+  teams = map fst table
+  matchdays = filterMatchdays teams mds
 
 relegation :: Team
             -> [Matchday]
             -> Table
-            -> Dist (Table,[Match])
-relegation team matchDays table = liftA2l (,)
-  (filterDist  (\t -> length (filter (\ (t1,p1) -> t1 /= team && p1 < teamPoints t) t)
-                       >= 2)
-               newTable)
-  -- (filterDist (\ t -> length (dropWhile ((/= team) . fst)  t)
-  --                           >= 3)
-  --           (sortTable <$> newTable))
-  results
+            -> Dist Table
+relegation team matchDays table =
+  question (\t -> length (filter (`weakerThan` teamEntry t) t) >= 2)
+           team
+           matchDays
+           table
+          
  where
-  teamPoints t = currentPoints team t
+  teamEntry t = (team, currentPoints team t)
+
+type Question a = Team -> [Matchday] -> Table -> Dist a
+
+question :: (Table -> Bool)
+         -> Team
+         -> [Matchday]
+         -> Table
+         -> Dist Table
+question cond team mds table =
+  filterDist cond newTable
+ where
   results :: Dist [Match]
-  results = traverse (uncurry result) (concat matchDays)
+  results = traverse (uncurry result) (concat mds)
   newTable :: Dist Table
   newTable = foldr (recalculateTable) table <$> results
-  liftA2l :: (a -> b -> c) -> Dist a -> Dist b -> Dist c
-  liftA2l f (Dist v p) (Dist w _) = Dist (f v w) p
 
-problem = countDist HamburgerSV (take 2 upcomingMatchdays) currentTable
+problem = countDist HamburgerSV (take 3 upcomingMatchdays) currentTable
 problemSmall = countDist HamburgerSV [day31] table30
 
 countDist team mds table =
   foldValues (\(Dist _ p) (Dist x q) -> Dist x (p+q))
-             (Dist ([],[]) 0.0)
+             (Dist [] 0.0)
              (set3 relegationReduced team mds table)
 
 day31 = [ -- (Schalke,Stuttgart), --(Wolfsburg,Hannover),
@@ -177,3 +212,28 @@ day31 = [ -- (Schalke,Stuttgart), --(Wolfsburg,Hannover),
 table30 = [ -- (Freiburg,30),(Hannover, 29),
            (HamburgerSV,28), (Paderborn, 28)]
            --(Stuttgart, 27)]
+
+-- ---------------------------------------------------------
+-- Tournament
+-- ---------------------------------------------------------
+
+tTable :: Table
+tTable = zip tTeams (repeat 0)
+
+tTeams = [HamburgerSV,Bremen,Wolfsburg,Gladbach]
+
+tGames :: [(Team,Team)]
+tGames = [(t1,t2) | t1 <- tTeams, t2 <- tTeams, t1 /= t2]
+
+winner :: Question Team
+winner team mds table = const team <$>
+  question (\t -> length (filter (`strongerThan` teamEntry t) t) == 0)
+           team
+           mds
+           table
+ where
+  teamEntry t = (team, currentPoints team t)
+
+tWinner :: Team -> Probability
+tWinner t = extractDist (winner t [tGames] tTable)
+
