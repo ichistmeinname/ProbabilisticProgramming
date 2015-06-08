@@ -103,10 +103,6 @@ fail = Dist failed 0.0
 joinWith :: (a -> b -> c) -> Dist a -> Dist b -> Dist c
 joinWith f (Dist x p) (Dist y q) = Dist (f x y) (p*q)
 
-dice :: Int -> Dist [Int]
-dice n | n == 0    = certainly []
-       | otherwise = joinWith (:) die (dice (n-1))
-
 
 (>>=) :: Dist a -> (a -> Dist b) -> Dist b
 Dist x p >>= f = Dist y (q * p)
@@ -226,12 +222,20 @@ f >>: g = \x -> let ds@(Dist y p:_) = g x
 ----- Examples           -----
 ------------------------------
 
+dice :: Int -> Dist [Int]
+dice n | n == 0    = certainly []
+       | otherwise = joinWith (:) die (dice (n-1))
+
+dice' :: Int -> Dist [Int]
+dice' n | n == 0    = certainly []
+        | otherwise = (:) <$> die <*> (dice' (n-1))
+
 die :: Dist Int
 die = uniform [1..6]
 
 dieSixes :: Int -> Int -> Probability
 dieSixes count rounds =
-  extractDist (filterDist ((>= count) . length . filter (== 6)) (dice rounds))
+  extractDist (filterDist ((>= count) . length . filter (== 6)) (dice' rounds))
 
 data Marble = R | G | B
   deriving Eq
