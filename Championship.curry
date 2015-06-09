@@ -25,10 +25,14 @@ possibleResults = [minBound .. maxBound]
 -- data Score = Int ::: Int
 
 weakerThan :: (Team,Int) -> (Team,Int) -> Bool
-weakerThan (t1,n) (t2,m) | t1 /= t2  = n <= m
+weakerThan (t1,n) (t2,m)
+  | t1 /= t2  = n < m
+  | otherwise = False
 
 strongerThan :: (Team,Int) -> (Team,Int) -> Bool
-strongerThan e1 e2 = not (weakerThan e1 e2)
+strongerThan e1@(t1,_) e2@(t2,_)
+  | t1 /= t2 = not (weakerThan e1 e2)
+  | otherwise = False
 
 points :: Result -> (Int,Int)
 points HomeVictory = (3,0)
@@ -46,14 +50,11 @@ matchPoints (Match t1 t2 res) = ((t1,res1),(t2,res2))
 type Table = [TableEntry]
 type TableEntry = (Team,Int)
 
+mkTableEntry :: Team -> Table -> TableEntry
+mkTableEntry team table = (team, currentPoints team table)
+
 type Matchday = [MatchdayEntry]
 type MatchdayEntry = (Team,Team)
-
-without :: Table -> Team -> Table
-without []         _ = []
-without (e@(t,_):ts) team
-  | t == team = ts
-  | otherwise = e : without ts team
 
 maxPoints :: [Matchday] -> Int
 maxPoints mds = fst (points (maxBound :: Result)) * length mds
@@ -71,18 +72,15 @@ addPoints :: Team -> Int -> Table -> Table
 addPoints k v = update k (+ v)
 
 recalculateTable :: Match -> Table -> Table
-recalculateTable (Match team1 team2 result) table =
+recalculateTable (Match team1 team2 res) table =
   addPoints team1 res1 (addPoints team2 res2 table)
  where
-  (res1,res2) = points result
+  (res1,res2) = points res
 
 updateTable :: [Matchday] -> Table -> (Table,[Match])
 updateTable mds table = (foldr recalculateTable table matches,matches)
  where
   matches = concatMap playMatchDay mds
-
-sortTable :: Table -> Table
-sortTable = sortBy strongerThan
 
 match :: Team -> Team -> Match
 match t1 t2 = Match t1 t2 _
@@ -122,8 +120,8 @@ currentTable =
   ,(Freiburg, 30), (Hannover, 29), (HamburgerSV,28), (Paderborn, 28)
   ,(Stuttgart, 27)]
 
-result :: Team -> Team -> Dist Match
-result t1 t2 = Match t1 t2 <$> uniform possibleResults
+uniformMatch :: Team -> Team -> Dist Match
+uniformMatch t1 t2 = Match t1 t2 <$> uniform possibleResults
 
 filterMatchdays :: [Team] -> [Matchday] -> [Matchday]
 filterMatchdays teams matchDays =
@@ -131,35 +129,12 @@ filterMatchdays teams matchDays =
                                    [t1,t2]))
         matchDays
 
-relegationReduced :: Team
-                  -> [Matchday]
-                  -> Table
-                  -> Dist Table
-relegationReduced team mds curTable =
-  relegation team mds' table'
+relegationReduced :: Question Table
+relegationReduced matchF team mds curTable =
+  relegation matchF team mds' table'
  where
   (mds',table') = filterT (< pointsBound) mds curTable
   pointsBound = currentPoints team curTable + maxPoints mds
-
--- relegation' :: Team
---             -> [Matchday]
---             -> Table
---             -> Dist Table
--- relegation' team [] curTable = pure []
--- relegation' team (md:mds) curTable =
---   relegation' team mds <*> relegationIteration team md curTable
---   -- foldr (\md dTable -> relegationIteration team md <$> dTable)
---   --       (pure curTable)
---   --       mds
-
--- relegationIteration :: Team
---                     -> Matchday
---                     -> Table
---                     -> Dist Table
--- relegationIteration team mds curTable =
---   relegation team mds' table'
---  where
---   (mds',table') = filterRelegation team [mds] curTable
 
 filterT :: (Int -> Bool)
         -> [Matchday]
@@ -171,41 +146,64 @@ filterT cond mds curTable = (matchdays,table)
   teams = map fst table
   matchdays = filterMatchdays teams mds
 
-relegation :: Team
-            -> [Matchday]
-            -> Table
-            -> Dist Table
-relegation team matchDays table =
-  question (\t -> length (filter (`weakerThan` teamEntry t) t) >= 2)
+relegation :: Question Table
+relegation matchF team matchDays table =
+  question (\t -> length (filter (`weakerThan` mkTableEntry team t) t) >= 2)
+           matchF
            team
            matchDays
            table
-          
+
+winner :: Question Table
+winner matchF team mds table =
+  question (\t -> null (filter (`strongerThan` mkTableEntry team t) t))
+           matchF
+           team
+           mds
+           table
+
+nthPlace :: Int -> Question Table
+nthPlace place matchF team matchdays table =
+  question (\t -> length (filter (`pred` mkTableEntry team t) t) `cond` place')
+           matchF
+           team
+           matchdays
+           table
  where
-  teamEntry t = (team, currentPoints team t)
+  (pred,cond,place') = mkTriple
+  mkTriple :: (TableEntry -> TableEntry -> Bool, Int -> Int -> Bool, Int)
+  mkTriple
+    | place >= teams `div` 2 = (strongerThan,(<),place)
+    | otherwise              = (weakerThan,(>=),teams - place)
+  teams = length table
 
-type Question a = Team -> [Matchday] -> Table -> Dist a
+type DistF a b = a -> Dist b
+type Question a = DistF (Team,Team) Match
+                -> Team
+                -> [Matchday]
+                -> Table
+                -> Dist a
 
-question :: (Table -> Bool)
-         -> Team
-         -> [Matchday]
-         -> Table
-         -> Dist Table
-question cond team mds table =
+question :: (Table -> Bool) -> Question Table
+question cond matchF team mds table =
   filterDist cond newTable
  where
   results :: Dist [Match]
-  results = traverse (uncurry result) (concat mds)
+  results = traverse matchF (concat mds)
   newTable :: Dist Table
   newTable = foldr (recalculateTable) table <$> results
 
-problem = countDist HamburgerSV (take 3 upcomingMatchdays) currentTable
-problemSmall = countDist HamburgerSV [day31] table30
+-- ---------------------------------------------------------
+-- Small Examples
+-- ---------------------------------------------------------
 
-countDist team mds table =
+problem q = countDist (q (uncurry uniformMatch) HamburgerSV (take 2 upcomingMatchdays) currentTable)
+problemSmall q = countDist (q (uncurry uniformMatch) HamburgerSV [day31] table30)
+
+countDist q =
   foldValues (\(Dist _ p) (Dist x q) -> Dist x (p+q))
              (Dist [] 0.0)
-             (set3 relegationReduced team mds table)
+             (set0 q)
 
 day31 = [ -- (Schalke,Stuttgart), --(Wolfsburg,Hannover),
           (Freiburg,Paderborn),(Mainz,HamburgerSV)]
@@ -223,17 +221,19 @@ tTable = zip tTeams (repeat 0)
 tTeams = [HamburgerSV,Bremen,Wolfsburg,Gladbach]
 
 tGames :: [(Team,Team)]
-tGames = [(t1,t2) | t1 <- tTeams, t2 <- tTeams, t1 /= t2]
+tGames = [(HamburgerSV,Bremen),(Mainz,Hannover),(HamburgerSV,Hannover),(Bremen,Mainz)]
+-- tGames = [(t1,t2) | t1 <- tTeams, t2 <- tTeams, t1 /= t2]
 
-winner :: Question Team
-winner team mds table = const team <$>
-  question (\t -> length (filter (`strongerThan` teamEntry t) t) == 0)
-           team
-           mds
-           table
- where
-  teamEntry t = (team, currentPoints team t)
+tWinner :: Team -> Dist Table
+tWinner t = countDist (winner (uncurry customMatch) t [tGames] tTable)
 
-tWinner :: Team -> Probability
-tWinner t = extractDist (winner t [tGames] tTable)
+-- 46 %	24 % 30 %
 
+customMatch t1 t2 = Match t1 t2 <$> scale (zip [HomeVictory,Draw,AwayVictory] (case (t1,t2) of
+  (Gladbach,Wolfsburg) -> [9,4,17]
+  (Wolfsburg,Gladbach) -> [17,4,9]
+  (Mainz,Hannover)     -> [4,8,6]
+  (Hannover,Mainz)     -> [6,8,4]
+  (Bremen,_)           -> [11,10,13]
+  (_,Bremen)           -> [13,10,11]
+  _                    -> [145,82,79]))
