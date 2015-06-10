@@ -1,1 +1,5 @@
 .curry
+*.ps
+*.aux
+*.prof
+Curry_Main_Goal.curry
