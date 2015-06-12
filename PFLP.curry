@@ -70,9 +70,23 @@ flatDist :: [Dist a] -> Dist a
 flatDist = foldr (\d d' -> d ? d') failed
 
 uniform :: [a] -> Dist a
-uniform xs = flatDist $ map (flip Dist (1.0 / count)) xs
+uniform xs = uniformInterval (foldr1 (?) xs) count
  where
-  count = fromInteger (length xs)
+  count = length xs
+
+uniform' :: (Bounded a, Enum a) => a -> Dist a
+uniform' val = uniformInterval val count
+ where
+  count = length (enumValues val)
+
+enumValues :: (Bounded a, Enum a) => a -> [a]
+enumValues _ = [minBound .. maxBound]
+
+uniformInterval :: a -> Int -> Dist a
+uniformInterval val = Dist val . (1.0 /) . fromInteger
+
+-- uniformWithPredicate :: a -> (a -> Bool) -> Dist a
+-- uniformWithPredicate val p = uniformInterval val (filter (enumValues val)
 
 scale :: [(a,Float)] -> Dist a
 scale xs = foldr (\(x,p) acc -> Dist x (Prob (p/q)) ? acc) failed xs
@@ -155,6 +169,11 @@ liftA2 f dA dB = f <$> dA <*> dB
 pure :: a -> Dist a
 pure x = Dist x 1.0
 
+replicateWith :: Int -> a -> (a -> Dist b) -> Dist [b]
+replicateWith n v fd
+  | n == 0    = certainly []
+  | otherwise = (:) <$> fd v <*> replicateWith (n - 1) v fd
+
 mapDist :: (a -> b) -> Dist a -> Dist b
 mapDist f (Dist x p) = Dist (f x) p
 
@@ -222,27 +241,47 @@ f >>: g = \x -> let ds@(Dist y p:_) = g x
 ----- Examples           -----
 ------------------------------
 
-dice :: Int -> Dist [Int]
-dice n | n == 0    = certainly []
-       | otherwise = joinWith (:) die (dice (n-1))
+coin :: Dist Bool
+coin = uniform' _
 
-dice' :: Int -> Dist [Int]
-dice' n | n == 0    = certainly []
-        | otherwise = (:) <$> die <*> (dice' (n-1))
+rollDices :: Int -> (_ -> Dist a) -> Dist [a]
+rollDices n = replicateWith n _
 
 die :: Dist Int
 die = uniform [1..6]
 
-dieSixes :: Int -> Int -> Probability
-dieSixes count rounds =
-  extractDist (filterDist ((>= count) . length . filter (== 6)) (dice' rounds))
+dieSixes :: Int -> Int -> (a -> Bool) -> Dist a -> Probability
+dieSixes count rounds cond aDice = extractDist
+  (filterDist ((>= count) . length . filter cond)
+              (rollDices rounds (\() -> aDice)))
+
+dieSixes' :: Int -> Int -> (a -> Bool) -> (_ -> Dist a) -> Probability
+dieSixes' count rounds cond aDice = extractDist
+  (filterDist (atLeastN count cond)
+  -- (filterDist ((>= count) . length . filter cond)
+              (rollDices rounds aDice))
+
+atLeastN :: Int -> (a -> Bool) -> [a] -> Bool
+atLeastN = atLeastN' 0
+atLeastN' n m _ []     = n >= m
+atLeastN' n m p (x:xs)
+  | n >= m    = True
+  | otherwise = atLeastN' (next n) m p xs
+ where
+  next | p x       = (+ 1)
+       | otherwise = id
+
+data Dice = One | Two | Three | Four | Five | Six
+  deriving (Bounded,Enum,Eq,Ord)
+
+die' :: _ -> Dist Dice
+die' _ = uniform' _
 
 data Marble = R | G | B
   deriving Eq
 
 rgbExample :: Probability
 rgbExample = extractDist (filterDist (== [R,G,B]) (select 3 [R,R,G,G,B]))
-
 
 type Height = Int
 data Tree = Alive Height | Hit Height | Fallen
