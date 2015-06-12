@@ -16,20 +16,8 @@ data BundesligaTeam = Frankfurt | Gladbach | Dortmund | Paderborn | Leverkusen
 --  Model for a (bundesliga) match
 -- ---------------------------------------------------------
 
--- Functor-like container
-data Identity a = Identity a
 
-unwrap :: Identity a -> a
-unwrap (Identity v) = v
-
-wrap :: a -> Identity a
-wrap = Identity
-
-fmap :: (a -> b) -> Identity a -> Identity b
-fmap f = wrap . f . unwrap
-
-type Simulation a b = BundesligaTeam -> BundesligaTeam -> a
-type MatchSimulation a = Simulation a Match
+type Simulation a =  BundesligaTeam -> BundesligaTeam -> a
 
 type BundesligaTable = Table BundesligaTeam Int
 
@@ -67,7 +55,7 @@ type MatchdayEntry = (BundesligaTeam,BundesligaTeam)
 matchdayEntries :: Matchday -> [MatchdayEntry]
 matchdayEntries (Matchday mes) = mes
 
-playMatchDay :: MatchSimulation a -> Matchday -> [a]
+playMatchDay :: Simulation a -> Matchday -> [a]
 playMatchDay play = map (uncurry play) . matchdayEntries
 
 maxPoints :: [Matchday] -> Int

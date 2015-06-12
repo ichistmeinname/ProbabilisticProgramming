@@ -8,9 +8,7 @@ import qualified Table as T (Table(..), value, key, TableEntry(..),
 import PFLP
 
 import Prelude hiding ((>>=))
-import FiniteMap
 import Maybe (fromJust)
--- import List
 import SetFunctions (set0, set4, foldValues, mapValues, Values)
 
 -- ---------------------------------------------------------
@@ -18,49 +16,49 @@ import SetFunctions (set0, set4, foldValues, mapValues, Values)
 -- ---------------------------------------------------------
 
 -- (pure) nondeterministic approach
-match :: BundesligaTeam -> BundesligaTeam -> Match
+match :: Simulation Match
 match t1 t2 = Match t1 t2 _
 
 -- probabilistic nondeterminstic approach
-uniformMatch :: BundesligaTeam -> BundesligaTeam -> Dist Match
+uniformMatch :: Simulation (Dist Match)
 uniformMatch t1 t2 = Match t1 t2 <$> uniform possibleResults
 
 
 -- ---------------------------------------------------------
---  Filter to reduce search space
+--  Helper functions to reduce the search space
 -- ---------------------------------------------------------
 
-type Filter = BundesligaTeam
-            -> [Matchday]
-            -> BundesligaTable
-            -> ([Matchday],BundesligaTable)
+type Reduction = BundesligaTeam
+               -> [Matchday]
+               -> BundesligaTable
+               -> ([Matchday],BundesligaTable)
 
-relegationReduced :: Filter
+relegationReduced :: Reduction
 relegationReduced team mds curTable =
   filterT (< pointsBound) mds curTable
  where
   pointsBound = currentPoints team curTable + maxPoints mds
 
-noFilter :: Filter
-noFilter = (\_ -> (,))
+noReduction :: Reduction
+noReduction = (\_ -> (,))
 
 -- ---------------------------------------------------------
 --  Questions
 -- ---------------------------------------------------------
 
-type AQuestion a b = (MatchdayEntry -> a)
+type AQuestion a b = Simulation a
                    -> BundesligaTeam
                    -> [Matchday]
                    -> BundesligaTable
                    -> b
 type Question = AQuestion Match BundesligaTable
 
-questionWithFilter :: Filter -> (BundesligaTable -> Bool) -> Question
-questionWithFilter reduceSS cond matchF team mds table =
+questionWithReduction :: Reduction -> (BundesligaTable -> Bool) -> Question
+questionWithReduction reduceSS cond matchF team mds table =
   filterT cond newTable
  where
   (mds',table') = reduceSS team mds table
-  results = traverse matchF (concatMap matchdayEntries mds')
+  results = traverse (uncurry matchF) (concatMap matchdayEntries mds')
   newTable = foldr (recalculateTable) table' results
   traverse = map
   filterT p t | p t = t
@@ -69,7 +67,7 @@ questionWithFilter reduceSS cond matchF team mds table =
 
 
 question :: (BundesligaTable -> Bool) -> Question
-question = questionWithFilter noFilter
+question = questionWithReduction noReduction
 
 filterT :: (Int -> Bool)
         -> [Matchday]
@@ -83,7 +81,7 @@ filterT cond mds (T.Table curTable) = (matchdays,T.Table table)
 
 relegation :: Question
 relegation matchF team matchDays table =
-  questionWithFilter relegationReduced
+  questionWithReduction relegationReduced
                      (\t@(T.Table tes) ->
                         length (filter (`T.weakerThan` mkTableEntry team t)
                                         tes)
@@ -136,9 +134,9 @@ nthPlace place matchF team matchdays table@(T.Table tEntries) =
 ------------------------------
 --  Nondeterminstic Evaluation
 -- ---------------------------
-percentageForQuestion :: Filter
+percentageForQuestion :: Reduction
                       -> Question
-                      -> (MatchdayEntry -> Match)
+                      -> Simulation Match
                       -> BundesligaTeam
                       -> [Matchday]
                       -> BundesligaTable
@@ -178,11 +176,11 @@ countDist q =
 -- Small Examples
 -- ---------------------------------------------------------
 
-problem q = q (uncurry match)
+problem q = q match
               HamburgerSV
               (take 2 upcomingMatchdays)
               currentTable
-problemSmall q = q (uncurry match) HamburgerSV [day31] table30
+problemSmall q = q match HamburgerSV [day31] table30
 
 
 day31 = [ -- (Schalke,Stuttgart), --(Wolfsburg,Hannover),
@@ -207,9 +205,7 @@ tGames = Matchday
 -- tGames = Matchday [(t1,t2) | t1 <- tTeams, t2 <- tTeams, t1 /= t2]
 
 -- tWinner :: BundesligaTeam -> Dist BundesligaTable
-tWinner t = winner (uncurry match) t [tGames] tTable
-
--- 46 % 24 % 30 %
+tWinner t = winner match t [tGames] tTable
 
 customMatch t1 t2 = Match t1 t2 <$> uniform possibleResults
   -- scale (zip [HomeVictory,Draw,AwayVictory] (case (t1,t2) of
