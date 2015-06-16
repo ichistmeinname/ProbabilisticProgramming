@@ -1,7 +1,8 @@
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 module PFLP where
 
-import SetFunctions (Values,mapValues,foldValues,set0,set1,set2,set3,selectValue,chooseValue)
+import SetFunctions (Values,mapValues,foldValues,set0,set1,set2,set3
+                    ,selectValue,chooseValue,values2list)
 import List (delete,sum,sort,sortBy,maximum)
 import Float (exp,i2f,pi,round,sqrt,(^.))
 import Combinators (oneOf)
@@ -93,6 +94,11 @@ scale xs = foldr (\(x,p) acc -> Dist x (Prob (p/q)) ? acc) failed xs
  where
   q = sum (map snd xs)
 
+scale' :: [(a,Float)] -> [(a,Float)]
+scale' xs = foldr (\ (x,p) acc -> (x,p/q) : acc) [] xs
+ where
+  q = sum (map snd xs)
+
 normal :: Spread a
 normal = shape (normalCurve 0.5 0.5)
 
@@ -111,6 +117,9 @@ shape f xs = scale (zip xs ps)
 certainly :: a -> Dist a
 certainly x = Dist x 1.0
 
+uncertainly :: a -> Dist a
+uncertainly x = Dist x 0.0
+
 fail :: Dist a
 fail = Dist failed 0.0
 
@@ -118,21 +127,21 @@ joinWith :: (a -> b -> c) -> Dist a -> Dist b -> Dist c
 joinWith f (Dist x p) (Dist y q) = Dist (f x y) (p*q)
 
 
-(>>=) :: Dist a -> (a -> Dist b) -> Dist b
-Dist x p >>= f = Dist y (q * p)
- where
-  Dist y q = f x
+-- (>>=) :: Dist a -> (a -> Dist b) -> Dist b
+-- Dist x p >>= f = Dist y (q * p)
+--  where
+--   Dist y q = f x
 
 unfoldT :: Dist (a -> Dist a) -> a -> Dist a
 unfoldT (Dist f p) x = Dist y (p*q)
  where
   Dist y q = f x
 
-(>@>) :: (a -> Dist b) -> (b -> Dist c) -> a -> Dist c
-(>@>) f g = (>>= g) . f
+-- (>@>) :: (a -> Dist b) -> (b -> Dist c) -> a -> Dist c
+-- (>@>) f g = (>>= g) . f
 
-sequence :: [a -> Dist a] -> a -> Dist a
-sequence = foldl (>@>) certainly
+-- sequence :: [a -> Dist a] -> a -> Dist a
+-- sequence = foldl (>@>) certainly
 
 extractDist :: Dist a -> Probability
 extractDist fDist =  probability $
@@ -177,20 +186,20 @@ replicateWith n v fd
 mapDist :: (a -> b) -> Dist a -> Dist b
 mapDist f (Dist x p) = Dist (f x) p
 
-selectOne :: Eq a => [a] -> Dist (a,[a])
-selectOne xs = uniform (map (\x -> (x, delete x xs)) ys)
- where
-  ys = valuesToList (set1 oneOf xs)
+-- selectOne :: Eq a => [a] -> Dist (a,[a])
+-- selectOne xs = uniform (map (\x -> (x, delete x xs)) ys)
+--  where
+--   ys = valuesToList (set1 oneOf xs)
 
-selectMany :: Eq a => Int -> [a] -> Dist ([a],[a])
-selectMany n c
-  | n == 0    = certainly ([],c)
-  | otherwise =
-      selectOne c >>= (\ (x,c1) -> selectMany (n-1) c1
-                        >>= \(xs,c2) -> certainly (x:xs,c2))
+-- selectMany :: Eq a => Int -> [a] -> Dist ([a],[a])
+-- selectMany n c
+--   | n == 0    = certainly ([],c)
+--   | otherwise =
+--       selectOne c >>= (\ (x,c1) -> selectMany (n-1) c1
+--                         >>= \(xs,c2) -> certainly (x:xs,c2))
 
-select :: Eq a => Int -> [a] -> Dist [a]
-select n = mapDist (reverse . fst) . selectMany n
+-- select :: Eq a => Int -> [a] -> Dist [a]
+-- select n = mapDist (reverse . fst) . selectMany n
 
 valuesToList :: Values a -> [a]
 valuesToList = foldValues (\v acc -> v ++ acc) [] . mapValues (: [])
@@ -221,7 +230,7 @@ enum = flatDist . map (\(f,float) -> Dist f (Prob float))
 (*.) :: Eq a => Int -> (a -> Dist a) -> a -> Dist a
 n *. t = head . (n *.. t)
 
--- Applies the a given transition `n` times and
+-- Applies the given transition `n` times and
 --  traces each step of the evolution
 (*..) :: Int -> (a -> Dist a) -> a -> [Dist a]
 n *.. t = case n of
@@ -272,16 +281,16 @@ atLeastN' n m p (x:xs)
        | otherwise = id
 
 data Dice = One | Two | Three | Four | Five | Six
-  deriving (Bounded,Enum,Eq,Ord)
+  deriving (Bounded,Enum,Eq,Ord,Show)
 
 die' :: _ -> Dist Dice
 die' _ = uniform' _
 
-data Marble = R | G | B
-  deriving Eq
+-- data Marble = R | G | B
+--   deriving Eq
 
-rgbExample :: Probability
-rgbExample = extractDist (filterDist (== [R,G,B]) (select 3 [R,R,G,G,B]))
+-- rgbExample :: Probability
+-- rgbExample = extractDist (filterDist (== [R,G,B]) (select 3 [R,R,G,G,B]))
 
 type Height = Int
 data Tree = Alive Height | Hit Height | Fallen
