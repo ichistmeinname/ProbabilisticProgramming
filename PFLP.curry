@@ -170,7 +170,7 @@ traverse :: (a -> Dist b) -> [a] -> Dist [b]
 traverse f = foldr (liftA2 (:) . f) (pure [])
 
 -- foldA :: (a -> b -> Dist b) -> b -> [a] -> Dist b
--- foldA f e = foldr (\x y -> f x y) e
+foldA f e = foldr (\x y -> f x y) <$> pure e
 
 liftA2 :: (a -> b -> c) -> Dist a -> Dist b -> Dist c
 liftA2 f dA dB = f <$> dA <*> dB
@@ -246,9 +246,40 @@ f >>: g = \x -> let ds@(Dist y p:_) = g x
                     Dist z q        = f y
                 in Dist z (p*q) : ds
 
-------------------------------
------ Examples           -----
-------------------------------
+
+---- -------------------------------------------------------
+----  Hoeffd
+---- -------------------------------------------------------
+
+hoeffd :: Float -> Float -> Float -> Float -> Float
+hoeffd n a b eps =
+  2 * exp (- x / y)
+ where
+  x = 2 * n * (eps ^. 2)
+  y = ((b - a) ^. 2)
+
+
+---- -------------------------------------------------------
+----  Monte-Carlo-Simulation
+---- -------------------------------------------------------
+
+takeSample :: Int -> Dist [Bool]
+takeSample n = map (const (liftA2 isInsideCircle x y)) [1..n]
+ where
+  x = uniform' (_ :: Bool)
+  y = uniform' (_ :: Bool)
+  isInsideCircle v1 v2 = v1 * v1 + v2 * v2 <= 1.0
+
+-- evaluateSamples :: Dist [Bool] -> Float
+-- evaluateSamples samples = inside / total
+--  where
+--   inside = sum (map (\x -> if x then 1.0 else 0.0) samples)
+--   total  = length samples
+
+
+----- ------------------------------------------------------
+-----  Examples
+----- ------------------------------------------------------
 
 coin :: Dist Bool
 coin = uniform' _
