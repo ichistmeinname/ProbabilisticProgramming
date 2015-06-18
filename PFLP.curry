@@ -6,6 +6,7 @@ import SetFunctions (Values,mapValues,foldValues,set0,set1,set2,set3
 import List (delete,sum,sort,sortBy,maximum)
 import Float (exp,i2f,pi,round,sqrt,(^.))
 import Combinators (oneOf)
+import Random (nextIntRange, nextInt, getRandomSeed)
 
 data Probability = Prob Float
   deriving (Eq,Ord)
@@ -260,15 +261,30 @@ hoeffd n a b eps =
 
 
 ---- -------------------------------------------------------
+----  Sampling
+---- -------------------------------------------------------
+
+filterByProb d@(Dist _ (Prob p)) rFloat | rFloat < p = d
+
+-- sample :: Dist a -> IO a
+-- sample dA = do
+--   -- xs <- values2list (set0 dA)
+--   rnd <- randomFloat
+--   let (d,vDs) = select (set0 (filterByProb dA rnd))
+--   if isEmpty vDs
+--     then return x
+--     else sample (foldValues (\Dist v (Prop p) -> Dist (v,p) (Prop p) ? acc) failed (mapValues (\(Dist v (Prop p)
+
+---- -------------------------------------------------------
 ----  Monte-Carlo-Simulation
 ---- -------------------------------------------------------
 
-takeSample :: Int -> Dist [Bool]
-takeSample n = map (const (liftA2 isInsideCircle x y)) [1..n]
- where
-  x = uniform' (_ :: Bool)
-  y = uniform' (_ :: Bool)
-  isInsideCircle v1 v2 = v1 * v1 + v2 * v2 <= 1.0
+-- takeSample :: Int -> Dist [Bool]
+-- takeSample n = map (const (liftA2 isInsideCircle x y)) [1..n]
+--  where
+--   x = uniform' (_ :: Bool)
+--   y = uniform' (_ :: Bool)
+--   isInsideCircle v1 v2 = v1 * v1 + v2 * v2 <= 1.0
 
 -- evaluateSamples :: Dist [Bool] -> Float
 -- evaluateSamples samples = inside / total
@@ -355,3 +371,18 @@ random :: (a -> Dist a) -> a -> a
 random f = pick . f
 
 -- rDist :: Ord a => [a] -> Dist a
+
+-- ---------------------------------------------------------
+--  Utils / Auxiliary Functions
+-- ---------------------------------------------------------
+
+randomFloat :: IO Float
+randomFloat = do
+  seed <- getRandomSeed
+  let val = head (nextInt seed)
+      floatVal = fromInteger (abs val)
+  return (truncate floatVal)
+ where
+  truncate val
+    | val < 1.0 = val
+    | otherwise = truncate (val / 10.0)

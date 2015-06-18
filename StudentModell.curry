@@ -1,6 +1,7 @@
-module BayesianNetwork.StudentModell where
+module StudentModell where
 
 import BayesianNetwork
+import PFLP
 
 intelligence, difficulty :: Dist Bool
 intelligence = bernoulli 0.3
@@ -14,7 +15,7 @@ sat vIntelligence = vIntelligence |> (bernoulli . f)
 
 grade :: Dist Bool -> Dist Bool -> Dist Bool
 grade vIntelligence vDifficulty =
-  (vIntelligence ||| vDifficulty) |> (bernoulli . uncurry f)
+  vIntelligence ||| vDifficulty |> (bernoulli . uncurry f)
  where
   f True  True  = 0.5
   f True  False = 0.1
@@ -33,10 +34,29 @@ letterOfRecommendation iBool dBool gBool sBool lBool =
       g' = grade i' d' =: gBool
       s' = sat i' =: sBool
       l' = letter g' =: lBool
-  in sequenceA [i',d',g',s',l']
+  in jointProbability [i',d',g',s',l']
 
 -- P(i^1,d^0,g^1,s^1,l^0) = 0.00576
 letterExample   = letterOfRecommendation True False True True False
+
+-- P(L=True,G=True) = 0.6
+-- ex6a = let g' = grade intelligence difficulty =: True
+--        in letter g' =: True
+letterWhenGrade gBool =
+  let i' = intelligence
+      d' = difficulty
+      g' = grade i' d' =: True
+      s' = sat i'
+      l' = letter g'
+  in (l',True) `given` [g',s',d',i']
+
+letterWhenGrade' gBool =
+  let i' = intelligence
+      d' = difficulty
+      g' = grade i' d' =: gBool
+      s' = sat i'
+      l' = letter g'
+  in l' =: True
 
 -- letterOfRecommendation' bools =
 --   let g = grade i d
@@ -75,7 +95,3 @@ letterExample   = letterOfRecommendation True False True True False
 --   in filterDist (== bools) (sequenceA [i',d',g',s',l'])
 
 -- letterExample'''   = letterOfRecommendation''' [True,False,True,True,False]
-
-
-ex6a = let g' = grade intelligence difficulty =: True
-       in letter g' =: True
