@@ -26,10 +26,9 @@ bernoulli v = Dist True (Prob v) ? Dist False (Prob (1.0 - v))
 jointProbability :: [Dist a] -> Dist [a]
 jointProbability = sequenceA
 
-condProbability :: Eq a => (()
-                -> Dist a,a)
-                -> [Dist a]
-                -> ([Probability],[Probability])
+condProbability :: Eq a => (() -> Dist a,a)
+                        -> [Dist a]
+                        -> ([Probability],[Probability])
 condProbability (distA,valA) dAs = (probsN, probsD)
  where
   probsD    = collectProbs (calc (distA ()))

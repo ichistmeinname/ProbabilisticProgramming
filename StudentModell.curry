@@ -1,3 +1,12 @@
+{-
+
+    The same problem was modelled in other languages too
+
+    Church: https://www.uni-oldenburg.de/en/computingscience/lcs/probabilistic-programming/church-a-probabilistic-scheme/example-6a-bayesian-network-student-model-with-evidence/
+    Figaro: https://www.uni-oldenburg.de/en/computingscience/lcs/probabilistic-programming/figaro-yet-another-probabilistic-programming-language/example-5-6-bayesian-network-student-model/
+
+-}
+
 module StudentModell where
 
 import BayesianNetwork
@@ -35,6 +44,9 @@ letterOfRecommendation iBool dBool gBool sBool lBool =
       s' = sat i' =: sBool
       l' = letter g' =: lBool
   in jointProbability [i',d',g',s',l']
+
+letterExample' i d g s l bools =
+  jointProbability (zipWith (=:) [i, d, g i d, s i, l (g i d)] bools)
 
 -- P(i^1,d^0,g^1,s^1,l^0) = 0.00576
 letterExample   = letterOfRecommendation True False True True False
