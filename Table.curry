@@ -3,7 +3,15 @@
 module Table where
 
 data Table k v = Table [TableEntry k v]
+ deriving (Eq,Ord)
+
+instance (Show k, Show v) => Show (Table k v) where
+  show (Table entries) = unlines (map show entries)
+
 data TableEntry k v = TableEntry k v
+
+instance (Show k, Show v) => Show (TableEntry k v) where
+  show (TableEntry k v) = show k ++ "     " ++ show v
 
 value :: TableEntry k v -> v
 value (TableEntry _ val) = val

@@ -51,7 +51,7 @@ type AQuestion a b = Simulation a
                    -> [Matchday]
                    -> BundesligaTable
                    -> b
-type Question = AQuestion Match BundesligaTable
+type Question = AQuestion (Dist Match) (Dist BundesligaTable)
 
 questionWithReduction :: Reduction -> (BundesligaTable -> Bool) -> Question
 questionWithReduction reduceSS cond matchF team mds table =
@@ -59,11 +59,11 @@ questionWithReduction reduceSS cond matchF team mds table =
  where
   (mds',table') = reduceSS team mds table
   results = traverse (uncurry matchF) (concatMap matchdayEntries mds')
-  newTable = foldr (recalculateTable) table' results
-  traverse = map
-  filterT p t | p t = t
-  -- filterT = filterDist
-  -- foldDist f e dist = foldr f e <$> dist
+  newTable = foldDist (recalculateTable) table' results
+  -- traverse = map
+  -- filterT p t | p t = t
+  filterT = filterDist
+  foldDist f e dist = foldr f e <$> dist
 
 
 question :: (BundesligaTable -> Bool) -> Question
@@ -134,34 +134,34 @@ nthPlace place matchF team matchdays table@(T.Table tEntries) =
 ------------------------------
 --  Nondeterminstic Evaluation
 -- ---------------------------
-percentageForQuestion :: Reduction
-                      -> Question
-                      -> Simulation Match
-                      -> BundesligaTeam
-                      -> [Matchday]
-                      -> BundesligaTable
-                      -> (Float,Int,Int)
-percentageForQuestion reduceSS q play team mds curTable =
-  ((fromInteger pos1 / fromInteger pos2) * 100,pos1,pos2)
- where
-  pos1    = countValues (set4 q play team matches table)
-  pos2    = countOutcomes matches
-  (matches,table) = reduceSS team mds curTable
+-- percentageForQuestion :: Reduction
+--                       -> Question
+--                       -> Simulation Match
+--                       -> BundesligaTeam
+--                       -> [Matchday]
+--                       -> BundesligaTable
+--                       -> (Float,Int,Int)
+-- percentageForQuestion reduceSS q play team mds curTable =
+--   ((fromInteger pos1 / fromInteger pos2) * 100,pos1,pos2)
+--  where
+--   pos1    = countValues (set4 q play team matches table)
+--   pos2    = countOutcomes matches
+--   (matches,table) = reduceSS team mds curTable
 
-countValues :: Values a -> Int
-countValues = foldValues (\_ n -> n + 1) 0 . mapValues (\_ -> 1)
+-- countValues :: Values a -> Int
+-- countValues = foldValues (\_ n -> n + 1) 0 . mapValues (\_ -> 1)
 
-countOutcomes :: [Matchday] -> Int
-countOutcomes mds =
-  length possibleResults `pow` length (concatMap matchdayEntries mds)
+-- countOutcomes :: [Matchday] -> Int
+-- countOutcomes mds =
+--   length possibleResults `pow` length (concatMap matchdayEntries mds)
 
-pow :: Integral a => a -> a -> a
-pow a b | b>= 0 = powaux 1 a b
-  where
-    powaux n x y = if y == 0 then n
-                   else powaux (n * if (y `mod` 2 == 1) then x else 1)
-                               (x * x)
-                               (y `div` 2)
+-- pow :: Integral a => a -> a -> a
+-- pow a b | b>= 0 = powaux 1 a b
+--   where
+--     powaux n x y = if y == 0 then ngg216
+--                    else powaux (n * if (y `mod` 2 == 1) then x else 1)
+--                                (x * x)
+--                                (y `div` 2)
 
 ------------------------------
 --  Probabilistic Evaluation
@@ -176,11 +176,19 @@ countDist q =
 -- Small Examples
 -- ---------------------------------------------------------
 
-problem q = q match
+-- Examples for Set-Function-Approach
+-- problem q = q match
+--               HamburgerSV
+--               (take 2 upcomingMatchdays)
+--               currentTable
+-- problemSmall q = q match HamburgerSV [day31] table30
+
+-- Examples for Probabilistic Approach
+problem q = q uniformMatch
               HamburgerSV
-              (take 2 upcomingMatchdays)
+              (take 3 upcomingMatchdays)
               currentTable
-problemSmall q = q match HamburgerSV [day31] table30
+problemSmall q = q uniformMatch HamburgerSV [day31] table30
 
 
 day31 = [ -- (Schalke,Stuttgart), --(Wolfsburg,Hannover),
@@ -205,7 +213,7 @@ tGames = Matchday
 -- tGames = Matchday [(t1,t2) | t1 <- tTeams, t2 <- tTeams, t1 /= t2]
 
 -- tWinner :: BundesligaTeam -> Dist BundesligaTable
-tWinner t = winner match t [tGames] tTable
+tWinner t = winner uniformMatch t [tGames] tTable
 
 customMatch t1 t2 = Match t1 t2 <$> uniform possibleResults
   -- scale (zip [HomeVictory,Draw,AwayVictory] (case (t1,t2) of
