@@ -16,30 +16,226 @@
 \end{frame}
 
 
-\begin{frame}{Probabilistische Programmierung}{Motivation}
+\note{
 
-\begin{enumeration}
-\item ``Kann der Hamburger SV noch die Klasse halten?''
-\item Wahrscheinlichkeit, mit der dieses Ereignis eintritt
-\item ganz nat\"urliche Fragestellung im Kontext von Probablistischer Programmierung
-\end{enumeration}
+
+Ich moechte in kurzer Form, meinen Vortrag in Bad Honnef als Einstieg
+nutzen. %
+Mein Vortrag in Bad Honnef beschaeftigte ich mich mit der Fragestellung,
+ob zu dem damaligen Zeitpunkt der laufenden Saison, ein bestimmter
+Tabellenplatz fuer den Hamburger SV noch potentiell moeglich war. %
+Die grundlegende Idee dieser Fragestellung war keineswegs neu und
+wurde in aehnlicher Form schon von Ingo Wegener im Rahmen von ein paar
+Seminarbeiten und darauffolgenden Diplomarbeiten analysiert. %
+
+Rahmenbedinungen fuer diese Fragestellung sind das Regelwerk des
+Turniermodus der 1. Fussball Bundesliga. %
+Zur Veranschaulichung habe ich die Tabelle aus meinem Buro
+mitgenommen; kurz gesagt: es gibt 18 Vereine, die jeweils zweimal
+gegeneinander spielen. Dabei unterscheidet man zwischen Hin- und
+Rueckrunde, wobei jeweils die Heimmannschaft wechselt. %
+Jede Mannschaft spielt also gegen jeder andere Mannschaft jeweils im
+eigenen als auch im gegnerischen Stadion. %
+
+Wir schauen uns kurz an, wie man diese Fragestellung samt
+Rahmenbedinung in Curry modellieren kann. %
+}
+\begin{frame}{Motivation}{Wie alles begann}
+\begin{minipage}{0.3\textwidth}
+\begin{figure}
+\includegraphics<1>[width=\textwidth]{images/curry-puzzle}
+\caption{\footnotesize AG-Vortrag WS14/15: R\"atsell\"osen in Curry}
+\end{figure}
+\end{minipage}%
+%
+\hfill%
+%
+\begin{minipage}{0.6\textwidth}
+\begin{figure}
+\includegraphics<1>[width=\textwidth]{images/ligagott-zoom}
+\caption{\footnotesize Bad Honnef Vortrag: Kann der Hamburger SV die Klasse halten?}
+\end{figure}
+\end{minipage}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  Einschub: Bad Honnef
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%
+%  Grundlegende Modellierung
+%
+\note{
+
+
+Die genaue Implementierung jeder einzelnen Funktion, die hier
+auftaucht, ist nicht relevant; vielmehr moechte ich schemenhaft zeigen,
+wie ein derartiges Problem modelliert werden kann.
+
+}
+\begin{frame}[fragile]{Motivation}{Bad Honnef Vortrag}
+Gibt es ausgehend von der aktuellen Tabelle eine Konstellation der
+noch verbleibenden Spieltage, so dass mindestens zwei Mannschaften
+(in der daraus resultierenden Tabelle) weniger
+Punkte haben als der Hamburger SV?
+
+\begin{semiverbatim}
+question :: Table -> [Fixture] -> Bool
+question table matchDays =
+  thereExist 2 newTable
+    `suchThat` all (`lessPointsThan` hsvPoints)
+ where
+  newTable = foldr updateTable table matchDays
+  hsvPoints = points HamburgerSV newTable
+\end{semiverbatim}
+
+\end{frame}
+
+%
+%  Schluessel der Modellierung:
+%    Simulation eines Spiels
+%
+\begin{frame}[fragile]{Motivation}{Bad Honnef Vortrag}
+
+\begin{semiverbatim}
+updateTable :: [Fixture] -> Table -> Table
+updateTable fixtures table =
+  foldr recalculateTable table results
+ where
+  results = map playFixture fixtures
+\end{semiverbatim}
+
+\begin{semiverbatim}
+data Match = Match Team Team Result
+data Result = HomeVictory | Draw | AwayVictory
+\end{semiverbatim}
+
+\begin{semiverbatim}
+playFixture :: Fixture -> Match
+playFixture (Fixture team1 team2) =
+  Match team1 team2 _
+\end{semiverbatim}
+
+
+%
+%  Daten fuer Modell sowie Anfrage
+%
+\note{
+Ich fuettere mein Modell also mit Daten; in diesem Fall handelt es
+sich um die verbleibenden drei Spieltage der vergangenen Saison. %
+Als letzten Schritte stelle ich dann meine Frage. %
+Zu diesem Zeitpunkt der Saison war ich in der Tat sehr gluecklich
+darueber, dass ein Verbleib in der 1. Bundesliga noch moeglich war. %
+
+}
+\begin{frame}[fragile]{Motivation}{Bad Honnef Vortrag}
+
+\begin{semiverbatim}
+table =
+  [(BayernMuenchen, 76), ...
+  ,(WerderBremen, 42), ...
+  ,(HamburgerSV,31),(SCPaderborn, 31),(SCFreiburg,30)
+  ,(Hannover96,30),(VfBStuttgart, 27)]
+\end{semiverbatim}
+
+\begin{semiverbatim}
+matchDay32 =
+  [ Fixture HamburgerSV SCFreiburg
+  , Fixture BayernMuenchen FCAugsburg
+  , ...
+  , Fixture Hannover96 WerderBremen ]
+matchDay33 = [ ... ]
+matchDay34 = [ ... ]
+\end{semiverbatim}
+  
+\begin{semiverbatim}
+> question table [matchDay32,matchDay33,matchDay34]
+True
+\end{semiverbatim}
+  
+\end{frame}
+  
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+\note{
+
+Ich moechte nicht nur wissen, ob der gefragte Ausgang moeglich
+ist -- sprich ``ja'' oder ``nein'' als Antwort, sondern mit welcher
+Wahrscheinlichkeit das Ereignis eintritt. %
+
+\begin{itemize}
+\item Kann der Hamburger SV noch die Klasse halten?
+\item Wahrscheinlichkeit, mit der Ereignis eintritt
+\item ganz nat\"urliche Fragestellung im Kontext von Probabilistischer Programmierung
+\end{itemize}
+
+}
+\begin{frame}{Motivation}{Probabilistische Programmierung}
+\center
+\Large
+Wie hoch ist die Wahrscheinlichkeit, dass der Hamburger SV die Klasse
+h\"alt?
 \end{frame}
 
 \begin{frame}{Probabilistische Programmierung}{Grundlegendes}
-\begin{enumeration}
+\begin{itemize}
 \item zuf\"allige Werte als Primitive der Sprache
 \item Definition von Probabilistischen Modellen
-\item Spezifikation von bereits bekannt Aussagen (Einschr\"ankungen)
+\item Spezifikation von bereits bekannten Ereignissen (Einschr\"ankungen)
 \item Berechnung von Anfragen an das Probabilistische Modell bzgl. dieser Einschr\"ankungen
-\end{enumeration}
-\begin{enumeration}
+\end{itemize}
+\begin{itemize}
 \item eingebettete DSL in vorhandener Programmiersprache (OCaml, Scala, Clojure, Haskell) 
-\item neue Probabilistische Programmiersprachen (Church, Venture, Anglican, BLOG, ProbLog, PRISM, Stan, Tabular, Figaro, Infer.Net
-\end{enumeration}
+\item neue Probabilistische Programmiersprachen (Church, Venture, Anglican, BLOG, ProbLog, PRISM, Stan, Tabular, Figaro, Infer.Net)
+\end{itemize}
 \end{frame}
 
-\begin{frame}
+
+
+\begin{frame}{Probabilistische Programmierung}{Bayes'sches Netz}
+
+\begin{itemize}
+\item Beispiel (Graph)
+\item Modellierung in Church/ProbLog
+\item Modellierung in Curry
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Probabilistische Programmierung}{Ausblick und Fazit}
+
+\begin{minipage}{.48\textwidth}
+\begin{itemize}
+\item Suchstrategien (Tiefensuche, Breitensuche, Iterative Deepening)
+\item Lazy Evaluation mit Sharing
+\item call-time-choice
+\item Nichtdeterminismus mittels Darstellung als Suchbaum
+\item freie Variablen
+\end{itemize}
+\end{minipage}
+%
+\hfill
+%
+\begin{minipage}{.48\textwidth}
+\begin{itemize}
+\item Inferenzalgorithmen
+\item explizites Speichern von Berechnung via $mem$
+\item \emph{Many World}-Semantik
+\item BDD zur Darstellung des Suchbaumes
+\item Lazy Auswertung f\"ur Suchbaum
+\item Delimitted Control als Optimierung
+\end{itemize}
+\end{minipage}
+
 
 \end{frame}
+
 \end{document}
-
