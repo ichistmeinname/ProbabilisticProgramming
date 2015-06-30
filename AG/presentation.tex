@@ -18,27 +18,6 @@
 
 \note{
 
-
-Ich moechte in kurzer Form, meinen Vortrag in Bad Honnef als Einstieg
-nutzen. %
-Mein Vortrag in Bad Honnef beschaeftigte ich mich mit der Fragestellung,
-ob zu dem damaligen Zeitpunkt der laufenden Saison, ein bestimmter
-Tabellenplatz fuer den Hamburger SV noch potentiell moeglich war. %
-Die grundlegende Idee dieser Fragestellung war keineswegs neu und
-wurde in aehnlicher Form schon von Ingo Wegener im Rahmen von ein paar
-Seminarbeiten und darauffolgenden Diplomarbeiten analysiert. %
-
-Rahmenbedinungen fuer diese Fragestellung sind das Regelwerk des
-Turniermodus der 1. Fussball Bundesliga. %
-Zur Veranschaulichung habe ich die Tabelle aus meinem Buro
-mitgenommen; kurz gesagt: es gibt 18 Vereine, die jeweils zweimal
-gegeneinander spielen. Dabei unterscheidet man zwischen Hin- und
-Rueckrunde, wobei jeweils die Heimmannschaft wechselt. %
-Jede Mannschaft spielt also gegen jeder andere Mannschaft jeweils im
-eigenen als auch im gegnerischen Stadion. %
-
-Wir schauen uns kurz an, wie man diese Fragestellung samt
-Rahmenbedinung in Curry modellieren kann. %
 }
 \begin{frame}{Motivation}{Wie alles begann}
 \begin{minipage}{0.3\textwidth}
@@ -52,172 +31,6 @@ Rahmenbedinung in Curry modellieren kann. %
 \end{minipage}
 \end{frame}
 
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  Einschub: Bad Honnef
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%
-%  Grundlegende Modellierung
-%
-\note{
-
-
-Die genaue Implementierung jeder einzelnen Funktion, die hier
-auftaucht, ist nicht relevant; vielmehr moechte ich schemenhaft zeigen,
-wie ein derartiges Problem modelliert werden kann.
-
-}
-\begin{frame}[fragile]{Motivation}{Meisterschaftsproblem}
-Gibt es ausgehend von der aktuellen Tabelle eine Konstellation der
-noch verbleibenden Spieltage, so dass mindestens zwei Mannschaften
-(in der daraus resultierenden Tabelle) weniger
-Punkte haben als der Hamburger SV?
-
-\begin{semiverbatim}
-relegation :: Team -> Table -> [Fixture] -> Bool
-champion   :: Team -> Table -> [Fixture] -> Bool
-\end{semiverbatim}
-
-
-\visible<2>{
-\begin{semiverbatim}
-matchDays :: [Fixture]
-
-matchDays = concat [matchDay32,matchDay33,matchDay34]
-\end{semiverbatim}
-\begin{semiverbatim}
-> relegation HSV table31 matchDays
-
-True
-
-> champion BMG table31 matchDays
-
-False
-\end{semiverbatim}
-}
-\end{frame}
-
-%
-%  Eigentliche Fragestellung rueckte aus dem Fokus
-%
-
-\note{
-
-Ich moechte nicht nur wissen, ob der gefragte Ausgang moeglich
-ist -- sprich ``ja'' oder ``nein'' als Antwort, sondern mit welcher
-Wahrscheinlichkeit das Ereignis eintritt. %
-
-Wie koennen wir diese Frage mit dem vorgegebenen Modell loesen?
-
-}
-\begin{frame}{Motivation}{Probabilistische Programmierung}
-\center
-\Large
-Wie hoch ist nun die Wahrscheinlichkeit, dass der Hamburger SV die Klasse
-h\"alt?
-\end{frame}
-
-
-%
-%  Wahrscheinlichkeiten im vorgegebenen Modell berechnen
-%
-\note{
-
-Momentan ist unsere Anfrage ein wenig einfacher, wir fragen nur, ob es
-ueberhaupt eine Loesung gibt. %
-Wenn wir ueber die Wahrscheinlichkeit argumentieren wollen, brauchen
-wir allerdings mehr Informationen als nur `ja` oder `nein`; wir
-brauchen alle Moeglichkeiten, die die Frage positiv beantworten. %
-
-Das heisst zu den gegebenen Parametern berechnen wir alle moeglichen
-Tabellenszenarien, die auf unser Kriterium ``Hamburg haelt die Klasse''
-passen. %
-Man koennte hier alle Moeglichkeiten als Liste darstellen, in Curry
-nutzen wir stattdessen aber sehr gerne den eingebauten
-Nichtdeterminismus: wir berechnen also nichtdeterministich alle
-moeglichen Tabellen. %
-
-}
-\begin{frame}[fragile]{Motivation}{Probabilistische Programmierung}
-\begin{semiverbatim}
--- gekapselter Nichtdeterminismus via `isEmpty`
---  - gibt es eine Tabelle?
-relegation :: Team -> Table -> [Fixture] -> Bool
-relegation ... = not (isEmpty (set ...))
-
--- nichtdeterministische Berechnung aller
---  m\"oglichen Tabellen
-relegationND :: Team -> Table -> [Fixture] -> Table
-\end{semiverbatim}
-
-\end{frame}
-
-
-%
-%  Nichtdeterminismus wird gekapselt; unflexibel bzgl. Wahrscheinlichkeiten
-%
-
-\note{
-
-Wir haben jeweils drei Parameter gegeben: das Team im Fokus, die
-ausgehende Tabellensituation und die noch fehlenden Partien. %
-Die fehlenden Partien stellen jeweils das Aufeinandertreffen zwei Mannschaften
-dar. %
-So ein Aufeinandertreffen kann auf drei verschiedene Weisen ausgehen:
-mit einem Heimsieg, Unentschieden oder Auswaertssieg.
-
-Wir sind in der Wahl ganz frei und berechnen unser Szenario einfach
-mit jedem moeglichen Ausgang; so erhalten wir nichtdeterministisch
-alle moeglichen Spielausgaenge. %
-
-Somit koennen wir die Anzahl der moeglichen Spielausgaenge
-bzgl. unserer Einschraenkung einfach
-zaehlen und durch die Gesamtanzahl der moeglichen Ausgaenge teilen. %
-Das Zaehlen der moeglichen Ergebnisse ermoeglicht uns also die Berechnung einer
-Wahrscheinlichkeit bzw. Aussagen ueber Wahrscheinlichkeiten innerhalb
-unseres Modells. %
-
-
-Die ganze Sache hat aber einen Haken: unser Modell ist leider sehr
-unflexibel. %
-Auch wenn ich hier nicht gerade vor einer sehr fussballbegeisterten
-Runde stehe, hat jeder von euch sicherlich schon ein paar Floskeln
-aufgeschnappt. %
-Wenn Deutschland mal wieder ein Vorbereitungsspiel, heisst es gerne z.B.
-``Deutschland ist eine Turniermannschaft''; oder man liest ``Bayern
-Muenchen gewinnt momentan alles''; hin und wieder kommt es gerne vor,
-dass eine eher durchwachsene Mannschaft, gerade gegen die Gegner auf
-Augenhoehe verliert und gegen die ``Grossen'' dann punktet. %
-
-Solche Informationen bzw. so eine Art von Vorwissen koennen wir nur sehr
-schwer in unser Modell eingehen lassen. %
-
-Diese Fragestellung ruft aber foermlich nach Probabilistischer
-Programmierung! %
-
-}
-\begin{frame}[fragile]{Motivation}{Probabilistische Programmierung}
-\begin{semiverbatim}
-relegation :: Team -> Table -> [Fixture] -> Bool
-relegationND :: Team -> Table -> [Fixture] -> Table
-\end{semiverbatim}
-
-\begin{semiverbatim}
-data Match = Match Team Team Result
-data Result = HomeVictory | Draw | AwayVictory
-\end{semiverbatim}
-
-\begin{semiverbatim}
--- nichtdeterministisch!
-playFixture :: Fixture -> Match
-playFixture (Fixture team1 team2) =
-  Match team1 team2 _
-\end{semiverbatim}
-
-\end{frame}
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -274,6 +87,59 @@ playFixture (Fixture team1 team2) =
 \end{frame}
 
 
+\begin{frame}[fragile]{Probabilistische Programmierung}{Einbettung in Curry}
+
+\small
+\begin{semiverbatim}
+data Probability = Prob Float
+data Dist a      = Dist a Probability
+
+sumDist :: Dist a -> Probability
+
+filterDist :: (a -> Bool) -> Dist a -> Dist a
+
+pure :: a -> Dist a
+
+(<*>) :: Dist (a -> b) -> Dist a -> Dist b
+\end{semiverbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]{Probabilistische Programmierung}{Einbettung in
+    Curry}
+\begin{semiverbatim}
+
+open -a Aquamacs
+
+\end{semiverbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]{Probabilistische Programmierung}{Einbettung in
+    Curry}
+\small
+\begin{semiverbatim}
+data Probability = Prob Float
+data Dist a = Dist a Probability
+
+sumDist :: Dist a -> Probability
+sumDist fDist = probability $
+  foldValues (\\ (Dist x q1) (Dist _ q2) -> Dist x (q1 + q2))
+             fail
+             (set0 fDist)
+
+filterDist :: (a -> Bool) -> Dist a -> Dist a
+filterDist p d@(Dist v _) | p v = d
+
+pure :: a -> Dist a
+pure x = Dist x 1.0
+
+(<*>) :: Dist (a -> b) -> Dist a -> Dist b
+Dist f p <*> Dist x q = Dist (f x) (p*q)
+\end{semiverbatim}
+\end{frame}
+
+
 \note{
 
 \begin{itemize}
@@ -289,40 +155,135 @@ playFixture (Fixture team1 team2) =
 
 \end{frame}
 
-
-\begin{frame}[fragile]{Probabilistische Programmierung}{Einbettung in Curry}
-
+\begin{frame}[fragile]{Probabilistische Programmierung}{Bayes'sches Netz}
+\small
 \begin{semiverbatim}
-data Dist a = Dist a Probability
-data Probability = Prob Float
-uniform :: [a] -> Dist a
-scale :: [(a,Float)] -> Dist a
-\end{semiverbatim}
-  
-\begin{semiverbatim}
-playFixture :: Fixture -> Match
-playFixture (Fixture team1 team2) =
-  Match team1 team2 _
+rain :: Dist Bool
+rain = bernoulli 0.2
 
-playFixtureP :: Fixture -> Dist Match
-playFixtureP (Fixture team1 team2) =
-  uniform [ match HomeVictory
-          , match Draw
-          , match AwayVictory]
- where match res = Match team1 team2 res
-\end{semiverbatim}
+sprinkler :: Bool -> Dist Bool
+sprinkler False = bernoulli 0.4
+sprinkler True  = bernoulli 0.01
 
+grassWet :: Bool -> Bool -> Dist Bool
+grassWet False False = bernoulli 0.0
+grassWet False True  = bernoulli 0.8
+grassWet True  False = bernoulli 0.9
+grassWet True  True  = bernoulli 0.99
+
+bernoulli :: Float -> Dist Bool
+bernoulli v = Dist True  (Prob v)
+            ? Dist False (Prob (1.0 - v))
+\end{semiverbatim}
 \end{frame}
+
+\begin{frame}[fragile]{Probabilistische Programmierung}{Bayes'sches Netz}
+\small
+\begin{semiverbatim}
+grassWetWhenRain = grass <*> (sprinkler <*> rain) <*> rain
+\end{semiverbatim}
+\vfill
+\begin{semiverbatim}
+> grassWetWhenRain
+...
+\end{semiverbatim}
+\vfill
+\end{frame}
+
+\begin{frame}[fragile]{Probabilistische Programmierung}{Bayes'sches Netz}
+\small
+\begin{semiverbatim}
+grassWet =
+  let r = rain
+  in grassWet <*> (sprinkler <*> r) <*> r
+\end{semiverbatim}
+\vfill
+\begin{semiverbatim}
+> grassWet
+...
+\end{semiverbatim}
+\vfill
+\end{frame}
+
+\begin{frame}[fragile]{Probabilistische Programmierung}{Bayes'sches Netz}
+\small
+\begin{semiverbatim}
+-- P(G=T, R=T)
+grassWetWhenRain =
+  let r = rain =: True
+      s = sprinkler <*> r
+  in (grassWet <*> r <*> s) =: True
+\end{semiverbatim}
+\vfill
+\begin{semiverbatim}
+> grassWetWhenRain
+...
+
+> sumDist (grassWetWhenRain)
+...
+\end{semiverbatim}
+\vfill
+\end{frame}
+
+\begin{frame}[fragile]{Probabilistische Programmierung}{Bayes'sches Netz}
+\small
+\begin{semiverbatim}
+-- P(R=T | G=T) circa 35.77 %
+rainWhenGrass =
+  let r = rain
+      s = sprinkler <*> r
+      g = (grass <*> s <*> r) =: True
+  in (r, True) `given` [s, g]
+\end{semiverbatim}
+\vfill
+\begin{semiverbatim}
+> rainWhenGrass
+...
+\end{semiverbatim}
+\vfill
+\end{frame}
+
 
 
 \begin{frame}{Probabilistische Programmierung}{Ausblick und Fazit}
 \begin{minipage}{.48\textwidth}
+Funktional Logisch
+\end{minipage}
+%
+\hfill
+%
+\begin{minipage}{.48\textwidth}
+Probabilistisch
+\end{minipage}
+%
+\vfill
+%
+\begin{minipage}{.48\textwidth}
 \begin{itemize}
-\item Suchstrategien (Tiefensuche, Breitensuche, Iterative Deepening)
-\item Lazy Evaluation mit Sharing
-\item call-time-choice
-\item Nichtdeterminismus mittels Darstellung als Suchbaum
-\item freie Variablen
+\item Nichtdeterminismus
+\item Kapselung (\emph{SetFunctions})
+\item \emph{Lazy Evaluation}
+\item \emph{call-time-choice} durch \emph{let}-Bindung
+\end{itemize}
+\end{minipage}
+% 
+\hfill
+%
+\begin{minipage}{.48\textwidth}
+\begin{itemize}
+\item \emph{Many World}-Semantik
+\item Inferenzalgorithmen
+\item \emph{Lazy} Datenstrukturen
+\item explizites Speichern von Berechnungen
+\end{itemize}
+\end{minipage}
+%
+\vfill
+%
+\begin{minipage}{.48\textwidth}
+\begin{itemize}
+\item [\color{green}*] freie Variablen
+\item [\color{green}*] \emph{Function Pattern}
 \end{itemize}
 \end{minipage}
 %
@@ -330,15 +291,201 @@ playFixtureP (Fixture team1 team2) =
 %
 \begin{minipage}{.48\textwidth}
 \begin{itemize}
-\item Inferenzalgorithmen
-\item explizites Speichern von Berechnung via $mem$
-\item \emph{Many World}-Semantik
-\item BDD zur Darstellung des Suchbaumes
-\item Lazy Auswertung f\"ur Suchbaum
-\item Delimitted Control als Optimierung
+\item [\color{red}*] BDDs zur Modellierung des Suchraumes
+\item [\color{red}*] \emph{Delimitted Control} als Optimierung
 \end{itemize}
 \end{minipage}
 
 \end{frame}
+
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% %  Einschub: Bad Honnef
+% %
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% %
+% %  Grundlegende Modellierung
+% %
+% \note{
+
+
+% Die genaue Implementierung jeder einzelnen Funktion, die hier
+% auftaucht, ist nicht relevant; vielmehr moechte ich schemenhaft zeigen,
+% wie ein derartiges Problem modelliert werden kann.
+
+% }
+% \begin{frame}[fragile]{Motivation}{Meisterschaftsproblem}
+% Gibt es ausgehend von der aktuellen Tabelle eine Konstellation der
+% noch verbleibenden Spieltage, so dass mindestens zwei Mannschaften
+% (in der daraus resultierenden Tabelle) weniger
+% Punkte haben als der Hamburger SV?
+
+% \begin{semiverbatim}
+% relegation :: Team -> Table -> [Fixture] -> Bool
+% champion   :: Team -> Table -> [Fixture] -> Bool
+% \end{semiverbatim}
+
+
+% \visible<2>{
+% \begin{semiverbatim}
+% matchDays :: [Fixture]
+
+% matchDays = concat [matchDay32,matchDay33,matchDay34]
+% \end{semiverbatim}
+% \begin{semiverbatim}
+% > relegation HSV table31 matchDays
+
+% True
+
+% > champion BMG table31 matchDays
+
+% False
+% \end{semiverbatim}
+% }
+% \end{frame}
+
+% %
+% %  Eigentliche Fragestellung rueckte aus dem Fokus
+% %
+
+% \note{
+
+% Ich moechte nicht nur wissen, ob der gefragte Ausgang moeglich
+% ist -- sprich ``ja'' oder ``nein'' als Antwort, sondern mit welcher
+% Wahrscheinlichkeit das Ereignis eintritt. %
+
+% Wie koennen wir diese Frage mit dem vorgegebenen Modell loesen?
+
+% }
+% \begin{frame}{Motivation}{Probabilistische Programmierung}
+% \center
+% \Large
+% Wie hoch ist nun die Wahrscheinlichkeit, dass der Hamburger SV die Klasse
+% h\"alt?
+% \end{frame}
+
+
+% %
+% %  Wahrscheinlichkeiten im vorgegebenen Modell berechnen
+% %
+% \note{
+
+% Momentan ist unsere Anfrage ein wenig einfacher, wir fragen nur, ob es
+% ueberhaupt eine Loesung gibt. %
+% Wenn wir ueber die Wahrscheinlichkeit argumentieren wollen, brauchen
+% wir allerdings mehr Informationen als nur `ja` oder `nein`; wir
+% brauchen alle Moeglichkeiten, die die Frage positiv beantworten. %
+
+% Das heisst zu den gegebenen Parametern berechnen wir alle moeglichen
+% Tabellenszenarien, die auf unser Kriterium ``Hamburg haelt die Klasse''
+% passen. %
+% Man koennte hier alle Moeglichkeiten als Liste darstellen, in Curry
+% nutzen wir stattdessen aber sehr gerne den eingebauten
+% Nichtdeterminismus: wir berechnen also nichtdeterministich alle
+% moeglichen Tabellen. %
+
+% }
+% \begin{frame}[fragile]{Motivation}{Probabilistische Programmierung}
+% \begin{semiverbatim}
+% -- gekapselter Nichtdeterminismus via `isEmpty`
+% --  - gibt es eine Tabelle?
+% relegation :: Team -> Table -> [Fixture] -> Bool
+% relegation ... = not (isEmpty (set ...))
+
+% -- nichtdeterministische Berechnung aller
+% --  m\"oglichen Tabellen
+% relegationND :: Team -> Table -> [Fixture] -> Table
+% \end{semiverbatim}
+
+% \end{frame}
+
+
+% %
+% %  Nichtdeterminismus wird gekapselt; unflexibel bzgl. Wahrscheinlichkeiten
+% %
+
+% \note{
+
+% Wir haben jeweils drei Parameter gegeben: das Team im Fokus, die
+% ausgehende Tabellensituation und die noch fehlenden Partien. %
+% Die fehlenden Partien stellen jeweils das Aufeinandertreffen zwei Mannschaften
+% dar. %
+% So ein Aufeinandertreffen kann auf drei verschiedene Weisen ausgehen:
+% mit einem Heimsieg, Unentschieden oder Auswaertssieg.
+
+% Wir sind in der Wahl ganz frei und berechnen unser Szenario einfach
+% mit jedem moeglichen Ausgang; so erhalten wir nichtdeterministisch
+% alle moeglichen Spielausgaenge. %
+
+% Somit koennen wir die Anzahl der moeglichen Spielausgaenge
+% bzgl. unserer Einschraenkung einfach
+% zaehlen und durch die Gesamtanzahl der moeglichen Ausgaenge teilen. %
+% Das Zaehlen der moeglichen Ergebnisse ermoeglicht uns also die Berechnung einer
+% Wahrscheinlichkeit bzw. Aussagen ueber Wahrscheinlichkeiten innerhalb
+% unseres Modells. %
+
+
+% Die ganze Sache hat aber einen Haken: unser Modell ist leider sehr
+% unflexibel. %
+% Auch wenn ich hier nicht gerade vor einer sehr fussballbegeisterten
+% Runde stehe, hat jeder von euch sicherlich schon ein paar Floskeln
+% aufgeschnappt. %
+% Wenn Deutschland mal wieder ein Vorbereitungsspiel, heisst es gerne z.B.
+% ``Deutschland ist eine Turniermannschaft''; oder man liest ``Bayern
+% Muenchen gewinnt momentan alles''; hin und wieder kommt es gerne vor,
+% dass eine eher durchwachsene Mannschaft, gerade gegen die Gegner auf
+% Augenhoehe verliert und gegen die ``Grossen'' dann punktet. %
+
+% Solche Informationen bzw. so eine Art von Vorwissen koennen wir nur sehr
+% schwer in unser Modell eingehen lassen. %
+
+% Diese Fragestellung ruft aber foermlich nach Probabilistischer
+% Programmierung! %
+
+% }
+% \begin{frame}[fragile]{Motivation}{Probabilistische Programmierung}
+% \begin{semiverbatim}
+% relegation :: Team -> Table -> [Fixture] -> Bool
+% relegationND :: Team -> Table -> [Fixture] -> Table
+% \end{semiverbatim}
+
+% \begin{semiverbatim}
+% data Match = Match Team Team Result
+% data Result = HomeVictory | Draw | AwayVictory
+% \end{semiverbatim}
+
+% \begin{semiverbatim}
+% -- nichtdeterministisch!
+% playFixture :: Fixture -> Match
+% playFixture (Fixture team1 team2) =
+%   Match team1 team2 _
+% \end{semiverbatim}
+
+% \end{frame}
+
+% \begin{frame}[fragile]{Probabilistische Programmierung}{Einbettung in Curry}
+
+% \begin{semiverbatim}
+% data Dist a = Dist a Probability
+% data Probability = Prob Float
+% uniform :: [a] -> Dist a
+% \end{semiverbatim}
+  
+% \begin{semiverbatim}
+% playFixture :: Fixture -> Match
+% playFixture (Fixture team1 team2) =
+%   Match team1 team2 _
+
+% playFixtureP :: Fixture -> Dist Match
+% playFixtureP (Fixture team1 team2) =
+%   uniform [ match HomeVictory
+%           , match Draw
+%           , match AwayVictory]
+%  where match res = Match team1 team2 res
+% \end{semiverbatim}
+
+% \end{frame}
+
 
 \end{document}
