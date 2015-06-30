@@ -3,25 +3,17 @@
 module BayesianNetwork where
 
 import List (sum)
-import SetFunctions (set0,mapValues,foldValues)
 import PFLP
-
--- `f` calculates a new probability dependent on the value
---   of dA
-(|>) :: Dist a -> (a -> Dist b) -> Dist b
-Dist vA _ |> f = f vA
-
-(|||) :: Dist a -> Dist b -> Dist (a,b)
-(|||) = liftA2 (,)
+import Distributions (bernoulli)
 
 (=:) :: Eq a => Dist a -> a -> Dist a
 dA =: val = filterDist (== val) dA
 
-infixl 4 |>
-infixl 5 |||
+given :: Eq a => (Dist a,a) -> [Dist a] -> Probability
+given (dist,val) = uncurry sumCondDist . condProbability (\() -> dist,val)
 
-bernoulli :: Float -> Dist Bool
-bernoulli v = Dist True (Prob v) ? Dist False (Prob (1.0 - v))
+
+-- Auxiliary functions
 
 jointProbability :: [Dist a] -> Dist [a]
 jointProbability = sequenceA
@@ -50,11 +42,3 @@ sumConditional (dist,val) dists =
 
 sumCondDist :: [Probability] -> [Probability] -> Probability
 sumCondDist probN probD = sum probN / sum probD
-
-sumDist :: Dist a -> Probability
-sumDist d = foldValues (+)
-                       (Prob 0.0)
-                       (mapValues (probability) (set0 d))
-
-given :: Eq a => (Dist a,a) -> [Dist a] -> Probability
-given (dist,val) = uncurry sumCondDist . condProbability (\() -> dist,val)

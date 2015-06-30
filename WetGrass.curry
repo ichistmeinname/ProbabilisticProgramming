@@ -13,51 +13,52 @@ module WetGrass where
 import BayesianNetwork
 import PFLP
 
-isRaining :: Dist Bool
-isRaining = Dist True (Prob 0.2) ? Dist False (Prob 0.8)
-
-isSprinkling :: Dist Bool -> Dist Bool
-isSprinkling dRain = case dRain of
-  Dist True _  -> Dist True (Prob 0.01) ? Dist False (Prob 0.99)
-  Dist False _ -> Dist True (Prob 0.4)  ? Dist False (Prob 0.6)
-
-isGrassWet :: Dist Bool -> Dist Bool -> Dist Bool
-isGrassWet (Dist True _)  (Dist True  _) = Dist True (Prob 0.99) ? Dist False (Prob 0.01)
-isGrassWet (Dist True _)  (Dist False _) = Dist True (Prob 0.9)  ? Dist False (Prob 0.1)
-isGrassWet (Dist False _) (Dist True  _) = Dist True (Prob 0.8)  ? Dist False (Prob 0.2)
-isGrassWet (Dist False _) (Dist False _) = Dist True (Prob 0.0)  ? Dist False (Prob 1.0)
-
-grassWetWhenRain =
-  let r = isRaining
-      s = isSprinkling r
-      g = isGrassWet s r
-  in g =: True
-grassWetWhenRain' = isGrassWet (isSprinkling isRaining) isRaining =: True
-
 -- -------------------------------------
 --  Example 1
 -- -------------------------------------
 
+-- data Dist a      = Dist a Probability
+-- type Probability = Float
+
 rain :: Dist Bool
 rain = bernoulli 0.2
 
-sprinkler :: Dist Bool -> Dist Bool
-sprinkler vRain = vRain |> (bernoulli . f)
- where
-  f False = 0.4
-  f True  = 0.01
+sprinkler :: Bool -> Dist Bool
+sprinkler False = bernoulli 0.4
+sprinkler True  = bernoulli 0.01
 
-grass :: Dist Bool -> Dist Bool -> Dist Bool
-grass vSprinkler vRain = vSprinkler ||| vRain |> (bernoulli . uncurry f)
- where
-  f False False = 0.0
-  f False True  = 0.8
-  f True  False = 0.9
-  f True  True  = 0.99
+grassWet :: Bool -> Bool -> Dist Bool
+grassWet False False = bernoulli 0.0
+grassWet False True  = bernoulli 0.8
+grassWet True  False = bernoulli 0.9
+grassWet True  True  = bernoulli 0.99
+
+grassWetWhenRain =
+  let r = rain
+      s = sprinkler <$> r =: True
+      g = liftA2 grassWet r s
+  in g =: True
+
+-- P(R=T | G=T) ~ 35.77 %
+rainWhenGrass =
+  let r' = rain
+      s' = sprinkler <$> r'
+      g' = liftA2 grass s' r' =: True
+  in (r', True) `given` [s', g']
+
 
 -- -------------------------------------
---  Example 2
+--  Example 2 (with different notation)
 -- -------------------------------------
+
+infixl 4 |>
+infixl 5 |||
+
+(|>) :: Dist a -> (a -> Dist b) -> Dist b
+Dist vA _ |> f = f vA
+
+(|||) :: Dist a -> Dist b -> Dist (a,b)
+(|||) = liftA2 (,)
 
 cloudy :: Dist Bool
 cloudy = bernoulli 0.5
@@ -85,24 +86,6 @@ grass' vSprinkler vRain = vSprinkler ||| vRain |> (bernoulli . uncurry f)
 -- -------------------------------------
 --  Queries
 -- -------------------------------------
-
--- -----------------
---  Example 1
--- -----------------
-
--- P(R=T | G=T) ~ 35.77 %
-rainWhenGrass =
-  let r' = rain
-      s' = sprinkler r'
-      g' = grass s' r' =: True
-  in (r', True) `given` [s', g']
--- rainWhenGrass r s g =
---   -- let r' = rain
---       -- s' = sprinkler r'
---       -- g' = grass s' r'
---   (r, True) `given` [g (s r) r =: True,s r]
-
-wetGrass r s g bools = jointProbability (zipWith (=:) [r, s r, g (s r) r] bools)
 
 -- -----------------
 --  Example 2
