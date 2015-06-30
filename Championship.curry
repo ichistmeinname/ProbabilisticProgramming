@@ -10,6 +10,7 @@ import PFLP
 import Prelude hiding ((>>=))
 import Maybe (fromJust)
 import SetFunctions (set0, set4, foldValues, mapValues, Values)
+import List (sum)
 
 -- ---------------------------------------------------------
 --  Match simulation
@@ -201,21 +202,39 @@ table30 = [ -- (Freiburg,30),(Hannover, 29),
 -- Tournament
 -- ---------------------------------------------------------
 
+
+-- This is all we need for now:
+
+-- data Dist a = Dist a Probability
+-- data Probability = Prob Float
+
+-- uniform :: [a] -> Dist a
+-- uniform xs = Dist (foldr1 (?) xs) (Prob (1.0 / fromInteger count))
+--  where
+--   count = length xs
+
+-- scale :: [(a,Float)] -> Dist a
+-- scale xs = foldr (\(x,p) acc -> Dist x (Prob (p/q)) ? acc) failed xs
+--  where
+--   q = sum (map snd xs)
+
 tTable :: BundesligaTable
 tTable = T.Table (zipWith T.TableEntry tTeams (repeat 0))
 
+tTeams :: [BundesligaTeam]
 tTeams = [HamburgerSV,Bremen,Hannover,Mainz]
 
 tGames :: Matchday
 tGames = Matchday
   [(HamburgerSV,Bremen),(Mainz,Hannover)
   ,(HamburgerSV,Hannover),(Bremen,Mainz)]
--- tGames = Matchday [(t1,t2) | t1 <- tTeams, t2 <- tTeams, t1 /= t2]
 
--- tWinner :: BundesligaTeam -> Dist BundesligaTable
+tWinner :: BundesligaTeam -> Dist BundesligaTable
 tWinner t = winner uniformMatch t [tGames] tTable
 
-customMatch t1 t2 = Match t1 t2 <$> uniform possibleResults
+customMatch t1 t2 = uniform [match HomeVictory, match Draw, match AwayVictory]
+ where
+  match res = Match t1 t2 res
   -- scale (zip [HomeVictory,Draw,AwayVictory] (case (t1,t2) of
   -- (Gladbach,Wolfsburg) -> [9,4,17]
   -- (Wolfsburg,Gladbach) -> [17,4,9]

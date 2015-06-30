@@ -6,8 +6,8 @@ import List (sum)
 import SetFunctions (set0,mapValues,foldValues)
 import PFLP
 
--- `f` calculates a new probability dependent on the values
---   of dA and dB
+-- `f` calculates a new probability dependent on the value
+--   of dA
 (|>) :: Dist a -> (a -> Dist b) -> Dist b
 Dist vA _ |> f = f vA
 

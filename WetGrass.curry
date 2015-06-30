@@ -13,6 +13,31 @@ module WetGrass where
 import BayesianNetwork
 import PFLP
 
+isRaining :: Dist Bool
+isRaining = Dist True (Prob 0.2) ? Dist False (Prob 0.8)
+
+isSprinkling :: Dist Bool -> Dist Bool
+isSprinkling dRain = case dRain of
+  Dist True _  -> Dist True (Prob 0.01) ? Dist False (Prob 0.99)
+  Dist False _ -> Dist True (Prob 0.4)  ? Dist False (Prob 0.6)
+
+isGrassWet :: Dist Bool -> Dist Bool -> Dist Bool
+isGrassWet (Dist True _)  (Dist True  _) = Dist True (Prob 0.99) ? Dist False (Prob 0.01)
+isGrassWet (Dist True _)  (Dist False _) = Dist True (Prob 0.9)  ? Dist False (Prob 0.1)
+isGrassWet (Dist False _) (Dist True  _) = Dist True (Prob 0.8)  ? Dist False (Prob 0.2)
+isGrassWet (Dist False _) (Dist False _) = Dist True (Prob 0.0)  ? Dist False (Prob 1.0)
+
+grassWetWhenRain =
+  let r = isRaining
+      s = isSprinkling r
+      g = isGrassWet s r
+  in g =: True
+grassWetWhenRain' = isGrassWet (isSprinkling isRaining) isRaining =: True
+
+-- -------------------------------------
+--  Example 1
+-- -------------------------------------
+
 rain :: Dist Bool
 rain = bernoulli 0.2
 
