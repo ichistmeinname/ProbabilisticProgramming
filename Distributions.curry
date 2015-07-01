@@ -1,6 +1,10 @@
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Distributions where
 
-import PFLP (Dist(..))
+import PFLP (Dist(..), Probability(..))
+import List (sum)
+import Float (exp,i2f,pi,sqrt,(^.))
 
 uniform :: [a] -> Dist a
 uniform xs = uniformInterval (foldr1 (?) xs) count
@@ -24,7 +28,6 @@ normalCurve mean stddev x = 1 / sqrt (2 * pi) * exp (-1/2 * u^.2)
   u = (x - mean) / stddev
 
 shape :: (Float -> Float) -> [a] -> Dist a
-shape _ [] = fail
 shape f xs = scale (zip xs ps)
  where
   incr = 1 / i2f ((length xs) - 1)

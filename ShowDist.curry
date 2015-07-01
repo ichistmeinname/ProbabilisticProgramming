@@ -1,8 +1,10 @@
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module ShowDist where
 
 import PFLP
-import Float (exp,i2f,pi,round,sqrt,(^.))
-import List (delete,sum,sort,sortBy,maximum)
+import Float (i2f,round)
+import List (sort,sortBy)
 import Combinators (oneOf)
 
 instance (Ord a, Show a) => Show (Dist a) where

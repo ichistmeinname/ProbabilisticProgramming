@@ -6,6 +6,7 @@ import Bundesliga
 import qualified Table as T (Table(..), value, key, TableEntry(..),
                              strongerThan,weakerThan)
 import PFLP
+import Distributions (uniform)
 
 import Prelude hiding ((>>=))
 import Maybe (fromJust)

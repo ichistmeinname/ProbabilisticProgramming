@@ -1,3 +1,5 @@
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module TreeEvolution where
 
 import PFLP (Dist(..), Probability(..), certainly )

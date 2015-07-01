@@ -1,10 +1,15 @@
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
-module BayesianNetwork where
+module BayesianNetwork
+  ( (=:), given, jointProbability, bernoulli )
+ where
 
 import List (sum)
 import PFLP
+import SetFunctions (set0, mapValues, foldValues)
 import Distributions (bernoulli)
+
+infixl 3 =:
 
 (=:) :: Eq a => Dist a -> a -> Dist a
 dA =: val = filterDist (== val) dA

@@ -10,6 +10,7 @@
 
 module WetGrass where
 
+import Prelude hiding ((>>=))
 import BayesianNetwork
 import PFLP
 
@@ -34,18 +35,26 @@ grassWet True  False = bernoulli 0.9
 grassWet True  True  = bernoulli 0.99
 
 grassWetWhenRain =
-  let r = rain
-      s = sprinkler <$> r =: True
-      g = liftA2 grassWet r s
+  let r' = rain =: True
+      s' = sprinkler =<< r' =: False
+      g = s' >>= \s ->
+          r' >>= \r ->
+            grassWet s r
   in g =: True
 
 -- P(R=T | G=T) ~ 35.77 %
 rainWhenGrass =
   let r' = rain
-      s' = sprinkler <$> r'
-      g' = liftA2 grass s' r' =: True
-  in (r', True) `given` [s', g']
+      s' = sprinkler =<< r'
+      g' = s' >>= \s ->
+           r' >>= \r ->
+             grassWet s r
+  in (r', True) `given` [s', g' =: True]
 
+grassWetWhenRain' = rain >>= \rS ->
+                    sprinkler rS >>= \s ->
+                    rain >>= \r ->
+                      grassWet s r =: True
 
 -- -------------------------------------
 --  Example 2 (with different notation)
