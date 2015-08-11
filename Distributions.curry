@@ -19,6 +19,12 @@ scale xs = foldr (\(x,p) acc -> Dist x (Prob (p/q)) ? acc) failed xs
  where
   q = sum (map snd xs)
 
+scale' :: [(a,Float)] -> [(a,Float)]
+scale' xs = foldr (\(x,p) acc -> (x,p/q) : acc) [] xs
+ where
+  q = sum (map snd xs)
+
+
 normal :: [a] -> Dist a
 normal = shape (normalCurve 0.5 0.5)
 

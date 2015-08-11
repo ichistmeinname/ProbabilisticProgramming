@@ -27,13 +27,6 @@ pure x = Dist x 1.0
 (<*>) :: Dist (a -> b) -> Dist a -> Dist b
 Dist f p <*> Dist x q = Dist (f x) (p*q)
 
-(>>=) :: Dist a -> (a -> Dist b) -> Dist b
-Dist valA _ >>= f = f valA
-
-(=<<) :: (a -> Dist b) -> Dist a -> Dist b
-(=<<) = flip (>>=)
-
-
 -- ----------------------
 --  Auxiliary Functions
 -- ----------------------
@@ -41,7 +34,13 @@ Dist valA _ >>= f = f valA
 -- Applicative "instance"
 
 (<$>) :: (a -> b) -> Dist a -> Dist b
-(<$>) f (Dist x p) = Dist (f x) p
+(<$>) f dA = pure f <*> dA
+
+(*>) :: Dist a -> Dist b -> Dist b
+dA *> dB = const id <$> dA <*> dB
+
+(<*) :: Dist a -> Dist b -> Dist a
+dA <* dB = const <$> dA <*> dB
 
 sequenceA :: [Dist a] -> Dist [a]
 sequenceA = traverse id

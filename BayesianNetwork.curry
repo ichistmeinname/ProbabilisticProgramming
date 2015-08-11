@@ -1,7 +1,7 @@
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module BayesianNetwork
-  ( (=:), given, jointProbability, bernoulli )
+  ( (=:), (|>), (<|), given, jointProbability, bernoulli )
  where
 
 import List (sum)
@@ -10,6 +10,8 @@ import SetFunctions (set0, mapValues, foldValues)
 import Distributions (bernoulli)
 
 infixl 3 =:
+infixl 4 |>
+infixl 4 <|
 
 (=:) :: Eq a => Dist a -> a -> Dist a
 dA =: val = filterDist (== val) dA
@@ -17,6 +19,11 @@ dA =: val = filterDist (== val) dA
 given :: Eq a => (Dist a,a) -> [Dist a] -> Probability
 given (dist,val) = uncurry sumCondDist . condProbability (\() -> dist,val)
 
+(|>) :: Dist a -> (a -> Dist b) -> Dist b
+dA |> f = f (value dA)
+
+(<|) :: (a -> Dist b) -> Dist a -> Dist b
+(<|) = flip (|>)
 
 -- Auxiliary functions
 

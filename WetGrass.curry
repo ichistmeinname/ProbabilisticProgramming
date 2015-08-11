@@ -1,3 +1,5 @@
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 {-
 
     The same problem was modelled in other languages too
@@ -10,10 +12,9 @@
 
 module WetGrass where
 
-import Prelude hiding ((>>=))
 import BayesianNetwork
 import PFLP
-
+import Distributions (scale)
 -- -------------------------------------
 --  Example 1
 -- -------------------------------------
@@ -36,35 +37,55 @@ grassWet True  True  = bernoulli 0.99
 
 grassWetWhenRain =
   let r' = rain =: True
-      s' = sprinkler =<< r' =: False
-      g = s' >>= \s ->
-          r' >>= \r ->
+      s' = sprinkler <| r' =: False
+      g = s' |> \s ->
+          r' |> \r ->
             grassWet s r
   in g =: True
 
 -- P(R=T | G=T) ~ 35.77 %
 rainWhenGrass =
   let r' = rain
-      s' = sprinkler =<< r'
-      g' = s' >>= \s ->
-           r' >>= \r ->
+      s' = sprinkler <| r'
+      g' = s' |> \s ->
+           r' |> \r ->
              grassWet s r
   in (r', True) `given` [s', g' =: True]
 
-grassWetWhenRain' = rain >>= \rS ->
-                    sprinkler rS >>= \s ->
-                    rain >>= \r ->
-                      grassWet s r =: True
+rainSprinkler = sprinkler <| rain
+grass2 = scale [(False,0.495),(False,0.3),(True,5.0e-3),(True,0.2)] |> \s ->
+         rain |> \r ->
+         grassWet s r
 
+grassWetTrue = 
+  let r' = rain
+      s' = sprinkler <| r'
+      g' = s' |> \s ->
+           r' |> \r ->
+             grassWet s r
+  in (g', True) `given` [s', r']
+
+grassWet' = rain |> \r ->
+            sprinkler r |> \s ->
+              grassWet s r
+
+grassWet'' =
+  let r' = rain
+      s' = r' >>>= sprinkler
+  in s' >>>= \s -> r' >>>= \r -> grassWet s r
+
+instance Show a => Show (Dist a) where
+  show (Dist v (Prob p)) = show v ++ " " ++ show p
 -- -------------------------------------
---  Example 2 (with different notation)
+--   Example 2 (with different notation)
 -- -------------------------------------
 
-infixl 4 |>
+(>>>=) :: Dist a -> (a -> Dist b) -> Dist b
+Dist a p >>>= f =
+  let Dist b p' = f a
+  in Dist b (p * p')
+
 infixl 5 |||
-
-(|>) :: Dist a -> (a -> Dist b) -> Dist b
-Dist vA _ |> f = f vA
 
 (|||) :: Dist a -> Dist b -> Dist (a,b)
 (|||) = liftA2 (,)
