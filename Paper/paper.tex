@@ -1,0 +1,134 @@
+\documentclass[
+12pt, % Main document font size
+a4paper, % Paper type, use 'letterpaper' for US Letter paper
+oneside, % One page layout (no page indentation)
+]{llncs}
+% \usepackage[german]{babel}
+\title{Declarative Pearl: Lightweight Probabilistic Programming in Curry}
+\author{Sandra Dylus}
+\institute{Institut f\"ur Informatik, Christian-Albrechts-Universi\"at zu Kiel\\\email{sad@informatik.uni-kiel.de}}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+  Lorem ipsum
+\end{abstract}
+
+\section{Introduction}
+
+There are many probabilistic languages around these days; a progress
+that started longer than a decade ago, but is currently especially
+active. %
+These languages have their origin either in functional, logic or
+imperative programming, i.e., you can choose a language based on your
+favourite paradigm. %
+Besides newly developed languages, a few libraries for probabilistic
+programming have seen the light of day as well. %
+These languages (stand-alone or DSL) all come with a handfull of
+useful tools (functions and stuff) to work with probabilistic values
+and distributions as well as inference algorithms to solve
+probabilistic models that use these values and distributions. %
+That said, there is a large subset that all these languages have in
+common, dispite their different approaches on semantic, syntax as well
+as goals and range of usage, respectively. %
+This subset is rather of practical nature and not of big intereset
+from a PL researcher perspective: every good library or programming
+language needs a handfull of primitives and predefined functions, but
+they are not the heart of this piece of software. %
+
+In case of probabilistic programming languages and libraries, we need
+to look at the implementation of the actual semantic behaviour -- what
+can we express with probabilistic languages and how can we interpret
+such an expression? %
+What is the intuition behind probability in the context of programming
+and what is its meaning? %
+
+Contributions:
+
+\begin{itemize}
+\item We present a lightweight library for probabilistic programming
+  in Curry. %
+  The library's core consists of ... data structures as well as
+  ... functions to work on these strucutres, overall the library needs
+  less than 30 lines of code. %
+\item We can reduce the library code to such a minimum by reusing Curry's
+  semantic. %
+  The best part is: no further mechanisms are necessary to enable
+  probabilistic computations in Curry. %
+  That said, we show high connections between current probability
+  programming languages and Curry, including lazy evaluation,
+  nondeterministic values as well as corresponding built-in search
+  abilities and call-time choice. %
+\item We present examples that emphasise the benefits of Curry's
+  representation of nondeterminsm, which enables early pruning of the
+  search space, compared to Haskell's MonadPlus instance for lists,
+  which is often used to model nondeterminism. %
+\end{itemize}
+
+\section{The Problem}
+
+
+\section{The Idea}
+
+\begin{itemize}
+
+\item We treat nondeterministic values like \emph{normal} values, that
+  is, we can test predicates on such values in order to filter
+  unwanted results. %
+
+\begin{verbatim}
+filterDist :: (a -> Bool) -> Dist a -> Dist a
+filterDist p d | p (value d) = d
+\end{verbatim}
+
+  Such a filter is often called \emph{partial identity} and a common
+  functional logic design pattern \cite{funcLogPattern}, additionaly,
+  it corresponds to notion of \emph{observing} a probabilistic value
+  and is a standard primitive in probabilistic programming
+  languages. %
+
+\item we model probabilistic values with nondeterminstic values -- a
+  probabilistic value is a pair of a value and its probability; a
+  probabilistic value %
+
+\begin{verbatim}
+biasedCoin = (True, 0.3)
+biasedCoin = (False, 0.7)
+\end{verbatim}
+
+\begin{verbatim}
+coin = (True ? False,0.5)
+\end{verbatim}
+ 
+\item Each nondeterministic choice corresponds to a branch in the
+  search tree. %
+  When we evaluate the search tree, we start at the root of the search
+  tree and go along a path in that tree: we decide for each branch
+  which child to take next. %
+  Additionally, we keep track of each decision we make in order to
+  repeat a decision in case it occurs several times at different
+  positions within the search tree. %
+
+\begin{verbatim}
+plus :: Dist Int -> Dist Int -> Dist Int
+plus dI1 dI2 = (+) <$> dI1 <*> dI2
+
+doubleCoinWithUnexpectedOutcome =
+  coin `plus` coin
+
+doubleCoin =
+  let c = coin
+  in c `plus` c
+\end{verbatim}
+
+\end{itemize}
+
+\section{The Details}
+
+\section{Related Work}
+
+\section{Conclusion and Future Work}
+
+\bibliography{/Users/sad/Documents/Papers/used}
+\bibliographystyle{plain}
+\end{document}
