@@ -15,7 +15,6 @@ oneside, % One page layout (no page indentation)
 \end{abstract}
 
 \section{Introduction}
-
 There are many probabilistic languages around these days; a progress
 that started longer than a decade ago, but is currently especially
 active. %
@@ -24,7 +23,7 @@ imperative programming, i.e., you can choose a language based on your
 favourite paradigm. %
 Besides newly developed languages, a few libraries for probabilistic
 programming have seen the light of day as well. %
-These languages (stand-alone or DSL) all come with a handfull of
+These languages (stand-alone or DSL) all come with a handful of
 useful tools (functions and stuff) to work with probabilistic values
 and distributions as well as inference algorithms to solve
 probabilistic models that use these values and distributions. %
@@ -33,7 +32,7 @@ common, dispite their different approaches on semantic, syntax as well
 as goals and range of usage, respectively. %
 This subset is rather of practical nature and not of big intereset
 from a PL researcher perspective: every good library or programming
-language needs a handfull of primitives and predefined functions, but
+language needs a handful of primitives and predefined functions, but
 they are not the heart of this piece of software. %
 
 In case of probabilistic programming languages and libraries, we need
@@ -43,11 +42,22 @@ such an expression? %
 What is the intuition behind probability in the context of programming
 and what is its meaning? %
 
-Contributions:
+The main goal of probabilistic programming is to open the door for a
+wide range of groups that want to evaluate probabilistic models: data
+scientists, domain experts and other developers. %
+Probabilistic programming languages want to minimise the burden for
+non-experts (in the area of machine learning and co) to design their
+own model and run algorithm on their data. %
+These languages already provide a rich set of primitives and most
+importantly inference algorithms that are built upon the results of
+experts. %
+Thus, a predefined and well-elaborated toolset simplifies the access
+to machine learning, because technical details can be ignored. %
 
+Contributions:
 \begin{itemize}
-\item We present a lightweight library for probabilistic programming
-  in Curry. %
+\item We present \emph{PFLP} a lightweight library for probabilistic
+  programming in the functional logic language Curry. %
   The library's core consists of ... data structures as well as
   ... functions to work on these strucutres, overall the library needs
   less than 30 lines of code. %
@@ -71,22 +81,6 @@ Contributions:
 \section{The Idea}
 
 \begin{itemize}
-
-\item We treat nondeterministic values like \emph{normal} values, that
-  is, we can test predicates on such values in order to filter
-  unwanted results. %
-
-\begin{verbatim}
-filterDist :: (a -> Bool) -> Dist a -> Dist a
-filterDist p d | p (value d) = d
-\end{verbatim}
-
-  Such a filter is often called \emph{partial identity} and a common
-  functional logic design pattern \cite{funcLogPattern}, additionaly,
-  it corresponds to notion of \emph{observing} a probabilistic value
-  and is a standard primitive in probabilistic programming
-  languages. %
-
 \item we model probabilistic values with nondeterminstic values -- a
   probabilistic value is a pair of a value and its probability; a
   probabilistic value %
@@ -99,6 +93,45 @@ biasedCoin = (False, 0.7)
 \begin{verbatim}
 coin = (True ? False,0.5)
 \end{verbatim}
+
+\item Working within a host language enables us to focus on the
+  problem itself and frees us from reimplementing standard primitives
+  (IO, data structures), essential design decisions (syntax,
+  parser). %
+  Based on which criteria do you choose the host language? %
+  As for probabilistic languages that started growing over time,
+  libraries that enable probablistic programming exist in the whole
+  variety of paradigms: declarative as well as imperative. %
+  For a start, you obviously choose the paradigm that has the clearest
+  structure and enables straight-forward programming. %
+  We want to address a wide range of developers and even
+  non-PL-experts, thus, we choose a paradigm than can be learnt
+  easily. %
+  Thus, obvioulsy, you choose a declarative programming language. %
+  By choosing Curry, we argue that it is sufficient to reuse built-in
+  features in order to cover the essence of probabilistic programs,
+  especially its semantic. %
+  
+\end{itemize}
+
+\section{The Details}
+
+\begin{itemize}
+
+\item We treat nondeterministic values like \emph{normal} values, that
+  is, we can test predicates on nondeterministic values in order to
+  filter unwanted results. %
+
+\begin{verbatim}
+filterDist :: (a -> Bool) -> Dist a -> Dist a
+filterDist p d | p (value d) = d
+\end{verbatim}
+
+  Such a filter is often called \emph{partial identity} and a common
+  functional logic design pattern \cite{funcLogPattern}, additionaly,
+  it corresponds to notion of \emph{observing} a probabilistic value
+  and is a standard primitive in probabilistic programming
+  languages. %
  
 \item Each nondeterministic choice corresponds to a branch in the
   search tree. %
@@ -108,6 +141,10 @@ coin = (True ? False,0.5)
   Additionally, we keep track of each decision we make in order to
   repeat a decision in case it occurs several times at different
   positions within the search tree. %
+  However, we have to distinct between values that are choosen
+  randomly values that share the decision. %
+  This distinction is very natural in Curry: a let-binding forces to
+  share decisions on probabilistic values. %
 
 \begin{verbatim}
 plus :: Dist Int -> Dist Int -> Dist Int
@@ -121,9 +158,12 @@ doubleCoin =
   in c `plus` c
 \end{verbatim}
 
-\end{itemize}
+\item We can benefit from lazy evaluation: a given search tree is only
+  evaluated if really needed and only the parts that are essential for
+  the given query, e.g., observations can rule out whole branches
+  early. %
 
-\section{The Details}
+\end{itemize}
 
 \section{Related Work}
 
