@@ -24,7 +24,6 @@ scale' xs = foldr (\(x,p) acc -> (x,p/q) : acc) [] xs
  where
   q = sum (map snd xs)
 
-
 normal :: [a] -> Dist a
 normal = shape (normalCurve 0.5 0.5)
 

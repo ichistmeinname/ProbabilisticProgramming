@@ -70,20 +70,13 @@ grassWet' = rain |> \r ->
               grassWet s r
 
 grassWet'' =
-  let r' = rain
-      s' = r' >>>= sprinkler
-  in s' >>>= \s -> r' >>>= \r -> grassWet s r
+  rain >>>= \r ->
+  sprinkler r >>>= \s ->
+  (grassWet s r =: True) >>>= \g -> pure r
 
-instance Show a => Show (Dist a) where
-  show (Dist v (Prob p)) = show v ++ " " ++ show p
 -- -------------------------------------
 --   Example 2 (with different notation)
 -- -------------------------------------
-
-(>>>=) :: Dist a -> (a -> Dist b) -> Dist b
-Dist a p >>>= f =
-  let Dist b p' = f a
-  in Dist b (p * p')
 
 infixl 5 |||
 

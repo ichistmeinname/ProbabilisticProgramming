@@ -27,6 +27,11 @@ pure x = Dist x 1.0
 (<*>) :: Dist (a -> b) -> Dist a -> Dist b
 Dist f p <*> Dist x q = Dist (f x) (p*q)
 
+(>>>=) :: Dist a -> (a -> Dist b) -> Dist b
+Dist a p >>>= f =
+  let Dist b p' = f a
+  in Dist b (p * p')
+
 -- ----------------------
 --  Auxiliary Functions
 -- ----------------------

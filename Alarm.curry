@@ -14,19 +14,21 @@ import BayesianNetwork
 import PFLP
 
 earthquake :: Dist Bool
-earthquake = bernoulli 0.002
+earthquake = bernoulli 0.2
 
 burglary :: Dist Bool
-burglary = bernoulli 0.001
+burglary = bernoulli 0.7
 
 alarm :: Dist Bool -> Dist Bool -> Dist Bool
 alarm vBurglary vEarthquake =
-  vBurglary ||| vEarthquake |> (bernoulli . uncurry f)
+  vBurglary |> \b ->
+    vEarthquake |> \e -> bernoulli $ f b e
  where
-  f True  True  = 0.95
-  f True  False = 0.94
-  f False True  = 0.29
+  f True  True  = 0.9
+  f True  False = 0.8
+  f False True  = 0.1
   f False False = 0.0
+
 
 -- P(B=T | A=T)
 query1 =
@@ -41,6 +43,32 @@ query2 =
       e' = earthquake
       a' = alarm b' e' =: True
   in (e', True) `given` [b',a']
+
+-- -----------------
+--  Second version
+-- -----------------
+
+alarm' :: Bool -> Bool -> Dist Bool
+alarm' True  True  = bernoulli 0.9
+alarm' True  False = bernoulli 0.8
+alarm' False True  = bernoulli 0.1
+alarm' False False = bernoulli 0.0
+
+query1' =
+  burglary >>>= \b ->
+  earthquake >>>= \e ->
+  (alarm' b e =: True) >>>= \_ ->
+  pure b
+  
+query2' =
+  burglary >>>= \b ->
+  earthquake >>>= \e ->
+  (alarm' b e =: True) >>>= \_ ->
+  pure e
+
+-- -----------------
+--  Extension
+-- -----------------
 
 data Person = Mary | John
 
