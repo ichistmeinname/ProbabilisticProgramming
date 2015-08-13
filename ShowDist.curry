@@ -1,11 +1,13 @@
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
-module ShowDist where
+module ShowDist where 
 
 import PFLP
+import Distributions (scale')
+
 import Float (i2f,round)
-import List (sort,sortBy)
-import Combinators (oneOf)
+import List (sort,sortBy, maximum)
+import SetFunctions (foldValues, mapValues, set0)
 
 instance (Ord a, Show a) => Show (Dist a) where
   show = show . toShowD
@@ -14,11 +16,17 @@ data ShowDist a = ShowDist [(a,Probability)]
   deriving (Eq,Ord)
 
 instance (Ord a, Show a) => Show (ShowDist a) where
-  show (ShowDist xs) = concatMap (\(x,p)-> showR w x ++ ' ' : show p ++ "\n") (sortP (norm xs))
+  show (ShowDist xs) = concatMap (\(x,p)-> showR w x ++ ' ' : show p ++ "\n") (scale (sortP (norm xs)))
    where
     w = maximum (map (length . show . fst) xs)
     showR n x = replicate (n-length s) ' ' ++ s
       where s = show x
+
+scale :: [(a,Probability)] -> [(a,Probability)]
+scale = map (onSnd Prob) . scale' . map (onSnd unP)
+
+onSnd :: (a -> b) -> (c,a) -> (c,b)
+onSnd f (x,y) = (x, f y)
 
 sortP :: [(a,Probability)] -> [(a,Probability)]
 sortP = sortBy (\x y -> snd y <= snd x)
@@ -39,4 +47,4 @@ accumBy f ((x,p):(y,q):xs)
   | otherwise = (x,p) : accumBy f ((y,q):xs)
 
 instance Show Probability where
-  show (Prob p) = show (i2f (round (p * 1000)) / 10) ++ "%"
+  show (Prob p) = show (i2f (round (p * 10000)) / 100) ++ "%"
