@@ -7,6 +7,9 @@ oneside, % One page layout (no page indentation)
 \title{Declarative Pearl: Lightweight Probabilistic Programming in Curry}
 \author{Sandra Dylus}
 \institute{Institut f\"ur Informatik, Christian-Albrechts-Universi\"at zu Kiel\\\email{sad@informatik.uni-kiel.de}}
+
+\newcommand{\code}[1]{{\texttt{#1}}}
+
 \begin{document}
 \maketitle
 
@@ -90,6 +93,12 @@ biasedCoin = (True, 0.3)
 biasedCoin = (False, 0.7)
 \end{verbatim}
 
+  Rules with overlapping patterns on the left-hand side are one way to
+  define nondeterministic functions in Curry. %
+  Alternatively, Curry provides an explicite choice operator \code{?}
+  that chooses nondeterministic between its first and second
+  argument. %
+
 \begin{verbatim}
 coin = (True ? False,0.5)
 \end{verbatim}
@@ -129,9 +138,8 @@ filterDist p d | p (value d) = d
 
   Such a filter is often called \emph{partial identity} and a common
   functional logic design pattern \cite{funcLogPattern}, additionaly,
-  it corresponds to notion of \emph{observing} a probabilistic value
-  and is a standard primitive in probabilistic programming
-  languages. %
+  it corresponds to notion of observing a probabilistic value and is a
+  standard primitive in probabilistic programming languages. %
  
 \item Each nondeterministic choice corresponds to a branch in the
   search tree. %
@@ -157,6 +165,28 @@ doubleCoin =
   let c = coin
   in c `plus` c
 \end{verbatim}
+
+\item The choice-operator comes in handy to simplify the corresponding
+  search tree. %
+  This benefit becomes more clear with the following code examples. %
+
+\begin{verbatim}
+coin' = (True, 0.5) ? (False, 0.5)
+
+coin = (True ? False, 0.5)
+\end{verbatim}
+
+  There is no semantic difference between the first and second
+  definition, however, the corresponding search trees indeed differ. %
+
+  Choice (True, 0.5) (False, 0.5)\\%
+  (Choice True False, 0.5)\\%
+
+  The definition of \code{coin'} consists of an expression with a
+  nondeterminstic choice on top-level position, whereas the definition
+  of \cote{coin} generalises the common parts of the two possible
+  values and uses the nondeterminism in a deeper position. %
+
 
 \item We can benefit from lazy evaluation: a given search tree is only
   evaluated if really needed and only the parts that are essential for
