@@ -5,6 +5,7 @@ import SetFunctions (foldValues,set0)
 
 infixl 4 <*>
 infixl 4 <$>
+infixl 4 >>>=
 
 data Probability = Prob Float
   deriving (Eq,Ord)

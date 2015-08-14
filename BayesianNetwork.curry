@@ -9,7 +9,7 @@ import PFLP
 import SetFunctions (set0, mapValues, foldValues)
 import Distributions (bernoulli)
 
-infixl 3 =:
+infixl 5 =:
 infixl 4 |>
 infixl 4 <|
 
