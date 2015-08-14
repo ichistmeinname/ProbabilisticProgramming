@@ -77,6 +77,57 @@ Contributions:
 
 \section{The Problem}
 
+Experts often state that you do not need to be a rocket scientist in
+order to make sense of research results; however, in the area of
+machine learning, beginners often face difficulties to use the tools
+and current knowledge for their own project. %
+That is, beginners need to inverse many hours to digest technical
+details before they can actually make use of top-of-the-art models and
+algorithms. %
+
+In the field of programming languages, the community often tries to
+generalise and simplify commen concepts and repetative structures. %
+Fortunately, the rising collaboration between ML and PL communities
+has produced a number of programming languages and libraries for
+probabilistic programming that aim at minimising the obstacle to use
+practicle results of ML, thus, empower more users to apply ML
+techniques to their problems. %
+
+
+For instance, a typical problem in the field of \emph{Bayesian
+  Network}s is to transfer a given model (e.g., a conditional
+probability table) into code in order to evaluation the model for a
+given data set. %
+Such an evaluation can range from stating queries to documenting
+observations to apply learning algorithms. %
+
+\begin{figure}
+\caption{Bayesian network with conditional probability table for \emph{alarm}-scenario}
+\end{figure}
+
+We can model this bayesian network with the following code. %
+
+\begin{verbatim}
+earthquake = bernoulli 0.2
+burglary   = bernoulli 0.7
+
+alarm True  True  = bernoulli 0.9
+alarm True  False = bernoulli 0.8
+alarm False True  = bernoulli 0.1
+alarm False False = bernoulli 0.0
+\end{verbatim}
+
+The definition for the probabilistic functions \code{earthquake},
+\code{burglary} and \code{alarm} follow straight-forward from the
+scheme of the given model. %
+The function \code{bernoulli} yields a probabilistic value that is
+\code{True} with probability given by the first argument and
+\code{False} with probability $1 - prob$. %
+
+\begin{verbatim}
+bernoulli prob = mkDist True prob
+bernoulli prob = mkDist False (1.0 - prob)
+\end{verbatim}
 
 \section{The Idea}
 
