@@ -125,35 +125,63 @@ The definition for the probabilistic functions \code{earthquake},
 scheme of the given model. %
 The function \code{bernoulli} yields a probabilistic value that is
 \code{True} with probability given by the first argument and
-\code{False} with probability $1 - prob$. %
+\code{False} with the converse probability. %
 
 \begin{verbatim}
 bernoulli prob = mkDist True prob
 bernoulli prob = mkDist False (1.0 - prob)
 \end{verbatim}
 
+After defining the model, we want to ask queries about certian
+propoerties and probabilities, respectively. %
+The essence of probabilistic programming is to harmonise the problem
+and its analysis: we want to define both, the problem and the queries,
+in same language. %
+
 \section{The Idea}
 
+In the style of \cite{pfp}, the library's heart is a data type that
+represents distributions: such a distribution consists of pair of
+value and its probability. %
+
+\begin{verbatim}
+data Probability = Prop Float
+data Dist a = Dist (a,Probability)
+\end{verbatim}
+
+However, the attentive reader may notice a slight difference: the PFLP
+approach does not need to represent the collection of possible values
+and their corresponding probabilities as list. %
+In functional languages like Curry, the representation of several
+results is commonly represented with nondeterminism instead of
+directly using a container like lists. %
+That is, we model probabilistic values as nondeterministic pairs of
+possible value tagged with their probability. %
+
+For example, we can define a biased coin with a $30\%-70\%$ chance to
+land on head and tail, respectively, as follows. %
+
+
+\begin{verbatim}
+data Coin = Head | Tail
+biasedCoin = (Head, 0.3)
+biasedCoin = (Tail, 0.7)
+\end{verbatim}
+
+Rules with overlapping patterns on the left-hand side are one way to
+define nondeterministic functions in Curry. %
+Alternatively, Curry provides an explicite choice operator \code{?}
+that chooses nondeterministicly between its first and second
+argument. %
+Hence, we can a define a fair coin with the following rule. %
+
+\begin{verbatim}
+fairCoin = (Head ? Tail,0.5)
+\end{verbatim}
+
+
+
 \begin{itemize}
-\item we model probabilistic values with nondeterminstic values -- a
-  probabilistic value is a pair of a value and its probability; a
-  probabilistic value %
-
-\begin{verbatim}
-biasedCoin = (True, 0.3)
-biasedCoin = (False, 0.7)
-\end{verbatim}
-
-  Rules with overlapping patterns on the left-hand side are one way to
-  define nondeterministic functions in Curry. %
-  Alternatively, Curry provides an explicite choice operator \code{?}
-  that chooses nondeterministic between its first and second
-  argument. %
-
-\begin{verbatim}
-coin = (True ? False,0.5)
-\end{verbatim}
-
 \item Working within a host language enables us to focus on the
   problem itself and frees us from reimplementing standard primitives
   (IO, data structures), essential design decisions (syntax,
@@ -235,7 +263,7 @@ coin = (True ? False, 0.5)
 
   The definition of \code{coin'} consists of an expression with a
   nondeterminstic choice on top-level position, whereas the definition
-  of \cote{coin} generalises the common parts of the two possible
+  of \code{coin} generalises the common parts of the two possible
   values and uses the nondeterminism in a deeper position. %
 
 
