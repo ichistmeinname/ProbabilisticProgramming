@@ -1,7 +1,7 @@
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module BayesianNetwork
-  ( (=:), (|>), (<|), given, jointProbability, bernoulli )
+  ( (=:), (|>), (<|), given, jointProbability, bernoulli, guard )
  where
 
 import List (sum)
@@ -15,6 +15,9 @@ infixl 4 <|
 
 (=:) :: Eq a => Dist a -> a -> Dist a
 dA =: val = filterDist (== val) dA
+
+guard :: Bool -> Dist ()
+guard True = pure ()
 
 given :: Eq a => (Dist a,a) -> [Dist a] -> Probability
 given (dist,val) = uncurry sumCondDist . condProbability (\() -> dist,val)

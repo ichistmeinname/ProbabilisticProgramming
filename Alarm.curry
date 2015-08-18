@@ -30,14 +30,14 @@ alarm vBurglary vEarthquake =
   f False False = 0.0
 
 
--- P(B=T | A=T)
+-- P(B=T | A=T) = { True 98.97%, False 1.03% }
 query1 =
   let b' = burglary
       e' = earthquake
       a' = alarm b' e' =: True
   in  (b', True) `given` [a',e']
 
--- P(E=T | A=T)
+-- P(E=T | A=T) = { False 77.24%, True 22.76% }
 query2 =
   let b' = burglary
       e' = earthquake
@@ -63,7 +63,8 @@ query1' =
 query2' =
   burglary >>>= \b ->
   earthquake >>>= \e ->
-  (alarm' b e =: True) >>>= \_ ->
+  alarm' b e >>>= \a ->
+  guard a >>>= \_ ->
   pure e
 
 -- -----------------
@@ -82,7 +83,7 @@ calls John vAlarm = vAlarm |> (bernoulli . f)
   f True  = 0.9
   f False = 0.05
 
--- P (B=T | calls John = T, calls Mary = T)
+-- P (B=T | calls John = T, calls Mary = T) = { True 98.19%, False 1.81% }
 query3 =
   let b' = burglary
       e' = earthquake
@@ -91,7 +92,7 @@ query3 =
       c2 = calls Mary a' =: True
   in (b',True) `given` [e',a',c1,c2]
 
--- P (E=T | calls John = T, calls Mary = T)
+-- P (E=T | calls John = T, calls Mary = T) = { False 77.31%, True 22.69% }
 query4 =
   let b' = burglary
       e' = earthquake
@@ -99,3 +100,30 @@ query4 =
       c1 = calls John a' =: True
       c2 = calls Mary a' =: True
   in (e',True) `given` [a',c1,c2,b']
+
+-- -----------------
+--  Second version
+-- -----------------
+
+calls' :: Person -> Bool -> Dist Bool
+calls' _ True = bernoulli 0.8
+calls' _ False = bernoulli 0.1
+
+query3' =
+  burglary >>>= \b ->
+  earthquake >>>= \e ->
+  alarm' b e >>>= \a ->
+  calls' John a >>>= \c1 ->
+  calls' Mary a >>>= \c2 ->
+  guard c1 >>>= \_ ->
+  guard c2 >>>= \_ ->
+  pure b
+
+query4' =
+  burglary >>>= \b ->
+  earthquake >>>= \e ->
+  alarm' b e >>>= \a ->
+  calls' John a >>>= \c1 ->
+  calls' Mary a >>>= \c2 ->
+  guard (c1 && c2) >>>= \_ ->
+  pure e

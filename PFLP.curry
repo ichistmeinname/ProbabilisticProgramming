@@ -13,6 +13,9 @@ data Probability = Prob Float
 data Dist a = Dist a Probability
   deriving (Eq,Ord)
 
+mkDist :: a -> Probability -> Dist a
+mkDist = Dist
+
 sumDist :: Dist a -> Probability
 sumDist fDist = probability $
   foldValues (\ (Dist x q1) (Dist _ q2) -> Dist x (q1 + q2))
