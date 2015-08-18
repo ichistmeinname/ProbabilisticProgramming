@@ -96,7 +96,6 @@ probabilistic programming that aim at minimising the obstacle to use
 practicle results of ML, thus, empower more users to apply ML
 techniques to their problems. %
 
-
 For instance, a typical problem in the field of \emph{Bayesian
   Network}s is to transfer a given model (e.g., a conditional
 probability table) into code in order to evaluation the model for a
@@ -141,31 +140,38 @@ in same language. %
 \section{The Idea}
 
 In the style of \cite{pfp}, the library's heart is a data type that
-represents distributions: such a distribution consists of pair of
-value and its probability. %
+represents distributions: such a distribution consists of a value and
+its probability. %
 
 \begin{verbatim}
 data Probability = Prop Float
-data Dist a = Dist (a,Probability)
+data Dist a = Dist a Probability
+
+mkDist :: a -> Probability -> Dist a
+mkDist = Dist
 \end{verbatim}
 
 However, the attentive reader may notice a slight difference: the PFLP
-approach does not need to represent the collection of possible values
-and their corresponding probabilities as list. %
-In functional languages like Curry, the representation of several
-results is commonly represented with nondeterminism instead of
+approach does not need to represent a distribution as a list of its
+possible values. %
+In functional logic languages like Curry, the representation of
+several results is commonly represented with nondeterminism instead of
 directly using a container like lists. %
 That is, we model probabilistic values as nondeterministic pairs of
 possible value tagged with their probability. %
 
-For example, we can define a biased coin with a $30\%-70\%$ chance to
-land on head and tail, respectively, as follows. %
-
+For example, we can define a biased coin with a $30\%$ vs $70\%$
+chance to land on head and tail, respectively, as follows. %
 
 \begin{verbatim}
-data Coin = Head | Tail
-biasedCoin = (Head, 0.3)
-biasedCoin = (Tail, 0.7)
+type Coin = Bool
+
+head, tail :: Coin
+head = True
+tail = False
+
+biasedCoin = (head, 0.3)
+biasedCoin = (tail, 0.7)
 \end{verbatim}
 
 Rules with overlapping patterns on the left-hand side are one way to
@@ -176,31 +182,26 @@ argument. %
 Hence, we can a define a fair coin with the following rule. %
 
 \begin{verbatim}
-fairCoin = (Head ? Tail,0.5)
+fairCoin = (head ? tail,0.5)
 \end{verbatim}
 
+Let us now take a look at the bayesian network example again. %
+We have already seen the definition of the model in the
+introduction. %
+However, the more interesting part is to make queries on the given
+model that cannot be answered with the probability table itself. %
+For example, we can ask the model for the probability that a burglary
+occured given the fact that the alarm was set of. %
 
-
-\begin{itemize}
-\item Working within a host language enables us to focus on the
-  problem itself and frees us from reimplementing standard primitives
-  (IO, data structures), essential design decisions (syntax,
-  parser). %
-  Based on which criteria do you choose the host language? %
-  As for probabilistic languages that started growing over time,
-  libraries that enable probablistic programming exist in the whole
-  variety of paradigms: declarative as well as imperative. %
-  For a start, you obviously choose the paradigm that has the clearest
-  structure and enables straight-forward programming. %
-  We want to address a wide range of developers and even
-  non-PL-experts, thus, we choose a paradigm than can be learnt
-  easily. %
-  Thus, obvioulsy, you choose a declarative programming language. %
-  By choosing Curry, we argue that it is sufficient to reuse built-in
-  features in order to cover the essence of probabilistic programs,
-  especially its semantic. %
-  
-\end{itemize}
+\begin{verbatim}
+-- P(B=T | A=T)
+alarmByBurglary =
+  burglary >>>= \b ->
+  earthquake >>>= \e ->
+  alarm b e >>>= \a ->
+  guard a >>>= \_ ->
+  pure b
+\end{verbatim}
 
 \section{The Details}
 
@@ -272,6 +273,24 @@ coin = (True ? False, 0.5)
   the given query, e.g., observations can rule out whole branches
   early. %
 
+\item Working within a host language enables us to focus on the
+  problem itself and frees us from reimplementing standard primitives
+  (IO, data structures), essential design decisions (syntax,
+  parser). %
+  Based on which criteria do you choose the host language? %
+  As for probabilistic languages that started growing over time,
+  libraries that enable probablistic programming exist in the whole
+  variety of paradigms: declarative as well as imperative. %
+  For a start, you obviously choose the paradigm that has the clearest
+  structure and enables straight-forward programming. %
+  We want to address a wide range of developers and even
+  non-PL-experts, thus, we choose a paradigm than can be learnt
+  easily. %
+  Thus, obvioulsy, you choose a declarative programming language. %
+  By choosing Curry, we argue that it is sufficient to reuse built-in
+  features in order to cover the essence of probabilistic programs,
+  especially its semantic. %
+  
 \end{itemize}
 
 \section{Related Work}
