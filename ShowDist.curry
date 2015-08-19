@@ -1,6 +1,8 @@
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
-module ShowDist where 
+module ShowDist
+  (showWithRescale, showLight)
+ where 
 
 import PFLP
 import Distributions (scale')
@@ -9,18 +11,21 @@ import Float (i2f,round)
 import List (sort,sortBy, maximum)
 import SetFunctions (foldValues, mapValues, set0)
 
-instance (Ord a, Show a) => Show (Dist a) where
-  show = show . toShowD
+showLight :: (Ord a, Show a) => Dist a -> String
+showLight = showWithFunction id
 
-data ShowDist a = ShowDist [(a,Probability)]
-  deriving (Eq,Ord)
+showWithRescale :: (Ord a, Show a) => Dist a -> String
+showWithRescale = showWithFunction scale
 
-instance (Ord a, Show a) => Show (ShowDist a) where
-  show (ShowDist xs) = concatMap (\(x,p)-> showR w x ++ ' ' : show p ++ "\n") (scale (sortP (norm xs)))
-   where
-    w = maximum (map (length . show . fst) xs)
-    showR n x = replicate (n-length s) ' ' ++ s
-      where s = show x
+showWithFunction :: (Ord a, Show a) => ([(a,Probability)] -> [(a,Probability)]) -> Dist a -> String
+showWithFunction f dist =
+  concatMap (\(x,p) -> showR w x ++ ' ' : show p ++ "\n")
+            (f (sortP (norm dList)))
+ where
+  dList = distToList dist
+  w = maximum (map (length . show . fst) dList)
+  showR n x = let s = show x
+              in replicate (n-length s) ' ' ++ s
 
 scale :: [(a,Probability)] -> [(a,Probability)]
 scale = map (onSnd Prob) . scale' . map (onSnd unP)
@@ -31,10 +36,10 @@ onSnd f (x,y) = (x, f y)
 sortP :: [(a,Probability)] -> [(a,Probability)]
 sortP = sortBy (\x y -> snd y <= snd x)
 
-toShowD :: Dist a -> ShowDist a
-toShowD dist =
-  foldValues (\ (ShowDist xs) (ShowDist ys) -> ShowDist (xs ++ ys)) (ShowDist [])
-    $ mapValues (\(Dist v p) -> ShowDist [(v,p)]) (set0 dist)
+distToList :: Dist a -> [(a,Probability)]
+distToList dist =
+  foldValues (\xs ys -> xs ++ ys) []
+    $ mapValues (\(Dist v p) -> [(v,p)]) (set0 dist)
 
 norm :: (Ord a, Eq a) => [(a,Probability)] -> [(a,Probability)]
 norm = accumBy (==) . sort
