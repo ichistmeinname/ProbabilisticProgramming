@@ -147,8 +147,8 @@ its probability. %
 data Probability = Prop Float
 data Dist a = Dist a Probability
 
-mkDist :: a -> Probability -> Dist a
-mkDist = Dist
+mkDist :: a -> Float -> Dist a
+mkDist x prob = Dist x (Prob prob)
 \end{verbatim}
 
 However, the attentive reader may notice a slight difference: the PFLP
@@ -170,8 +170,8 @@ head, tail :: Coin
 head = True
 tail = False
 
-biasedCoin = (head, 0.3)
-biasedCoin = (tail, 0.7)
+biasedCoin = mkDist head 0.3
+biasedCoin = mkDist tail 0.7
 \end{verbatim}
 
 Rules with overlapping patterns on the left-hand side are one way to
@@ -182,7 +182,7 @@ argument. %
 Hence, we can a define a fair coin with the following rule. %
 
 \begin{verbatim}
-fairCoin = (head ? tail,0.5)
+fairCoin = mkDist (head ? tail) 0.5
 \end{verbatim}
 
 Let us now take a look at the bayesian network example again. %
@@ -251,9 +251,9 @@ doubleCoin =
   This benefit becomes more clear with the following code examples. %
 
 \begin{verbatim}
-coin' = (True, 0.5) ? (False, 0.5)
+coin' = mkDist True 0.5 ? mkDist False 0.5
 
-coin = (True ? False, 0.5)
+coin = mkDist (True ? False) 0.5
 \end{verbatim}
 
   There is no semantic difference between the first and second

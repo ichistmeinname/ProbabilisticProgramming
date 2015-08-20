@@ -13,8 +13,8 @@ data Probability = Prob Float
 data Dist a = Dist a Probability
   deriving (Eq,Ord)
 
-mkDist :: a -> Probability -> Dist a
-mkDist = Dist
+mkDist :: a -> Float -> Dist a
+mkDist x prob = Dist x (Prob prob)
 
 sumDist :: Dist a -> Probability
 sumDist fDist = probability $
