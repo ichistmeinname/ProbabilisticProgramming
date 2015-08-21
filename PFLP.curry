@@ -13,14 +13,14 @@ data Probability = Prob Float
 data Dist a = Dist a Probability
   deriving (Eq,Ord)
 
-mkDist :: a -> Float -> Dist a
-mkDist x prob = Dist x (Prob prob)
+dist :: a -> Float -> Dist a
+dist x prob = Dist x (Prob prob)
 
 sumDist :: Dist a -> Probability
-sumDist fDist = probability $
+sumDist dists = probability $
   foldValues (\ (Dist x q1) (Dist _ q2) -> Dist x (q1 + q2))
              fail
-             (set0 fDist)
+             (set0 dists)
 
 filterDist :: (a -> Bool) -> Dist a -> Dist a
 filterDist p d@(Dist v _) | p v = d

@@ -15,7 +15,7 @@ instance (Ord a, Show a) => Show (Dist a) where
 type Day = Int
 
 condition :: Float -> Float -> Float -> Dist Condition
-condition sunny rainy foggy = mkDist Sunny sunny ? mkDist Rainy rainy ? mkDist Foggy foggy
+condition sunny rainy foggy = dist Sunny sunny ? dist Rainy rainy ? dist Foggy foggy
 
 -- Example taken from https://dtai.cs.kuleuven.be/problog/tutorial.html#tut_part1_HMM
 weather :: Condition -> Day -> Dist Condition
