@@ -6,36 +6,99 @@ import ShowDist
 import PFLP
 import BayesianNetwork
 
-import List (find)
+import List (find,delete)
 
 instance (Ord a,Show a) => Show (Dist a) where
   show = showLight
-
-{- Example taken from https://dtai.cs.kuleuven.be/problog/tutorial.html#tut_part1_graphs -}
 
 type WeightedGraph  = [Dist Edge]
 -- Edges exist with a certain probability
 type Edge   = (Vertex,Vertex)
 -- Vertices have unique identifiers
-type Vertex = Int
+data Vertex = Vertex1 | Vertex2 | Vertex3 | Vertex4 | Vertex5 | Vertex6
+ deriving Eq
+
+vertex :: Int -> Vertex
+vertex i = case i of
+               1 -> Vertex1
+               2 -> Vertex2
+               3 -> Vertex3
+               4 -> Vertex4
+               5 -> Vertex5
+               6 -> Vertex6
+               _ -> error "Vertex does not exist"
 
 edge :: Edge -> Dist Bool
-edge e = case e of
-  (1,2) -> bernoulli 0.6
-  (1,3) -> bernoulli 0.1
-  (2,5) -> bernoulli 0.4
-  (2,6) -> bernoulli 0.3
-  (3,4) -> bernoulli 0.3
-  (4,5) -> bernoulli 0.8
-  (5,6) -> bernoulli 0.2
-  _     -> bernoulli 0.0
+edge edge = case edge of
+  (Vertex1,Vertex2) -> bernoulli 0.6
+  (Vertex1,Vertex3) -> bernoulli 0.1
+  (Vertex2,Vertex5) -> bernoulli 0.4
+  (Vertex2,Vertex6) -> bernoulli 0.3
+  (Vertex3,Vertex4) -> bernoulli 0.4
+  (Vertex4,Vertex5) -> bernoulli 0.8
+  (Vertex5,Vertex6) -> bernoulli 0.2
+  -- _                 -> bernoulli 0.0
 
-path :: Vertex -> Vertex -> Dist Bool
-path x y          = (||) <$> edge (x,y) <*> ((&&) <$> edge (x,z) <*> path z y)
+path :: Int -> Int -> Dist Bool
+path x y = path' (vertex x) (vertex y)
+
+path' :: Vertex -> Vertex -> Dist Bool
+path' x y      = edge (x,y)
+path' x y | y /= z = (&&) <$> edge (x,z) <*> path' z y
  where z free
 
+-- Does not work as hoped
+--  (due to nondeterminstic definition of `path`):
+--  > path 1 5
+--  path 1 5
+--  (Dist True (Prob 0.24000001))
+--  (Dist False (Prob 0.36))
+--  (Dist False (Prob 0.16))
+--  (Dist False (Prob 0.24))
+--  (Dist True (Prob 3.2e-2))
+--  (Dist False (Prob 8.0e-3))
+--  (Dist False (Prob 4.8000004e-2))
+--  (Dist False (Prob 1.2e-2))
+--  (Dist False (Prob 0.28800002))
+--  (Dist False (Prob 7.2e-2))
+--  (Dist False (Prob 0.432))
+--  (Dist False (Prob 0.107999995))
+--
+-- We would like to have the following results:
+d1 = (Dist True (Prob 0.2400000001))
+d2 = (Dist False (Prob 0.7500000009))
+d3 = (Dist True (Prob 3.2e-2))
+d4 = (Dist False (Prob 0.968))
+
+-- And finally
+orSum = print (foldr (?)
+                     (Dist False 0.0)
+                     [ (||) <$> v1 <*> v2 | v1 <- [d1,d2]
+                                          , v2 <- [d3,d4]
+                                          , v1 /= v2])
+
+--  > print orSum
+--  False 72.6%
+--  True 26.4%
+
+-------------
+-- Version 2
+
+-- path'' :: Vertex -> Vertex -> Dist Bool
+-- path'' x y      = (||) <$> edge (x,y) <*> (((\e p -> y /= z && e && p) <$> edge (x,z) <*> path'' z y) ? bernoulli 0.0)
+--  where z free
+
+-- (<?>) :: Dist Bool -> Dist Bool -> Dist Bool
+-- b1 <?> b2 = (||) <$> b1 <*> b2
+
+
+-- Does not work because the search space is not finite (Vertex Int)
+--
+-- TODO: Try again with `data Vertex`
+--
+-- type Vertex = Int
 -- edge :: Edge -> Float -> Dist Edge
--- edge vertexPair prob = mkDist vertexPair prob
+-- edge vertexPair prob = dist vertexPair prob
 
 -- g1 :: WeightedGraph
 -- g1 = map (uncurry edge) [((1,2),0.6)
