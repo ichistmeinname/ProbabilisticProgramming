@@ -14,7 +14,9 @@ data Dist a = Dist a Probability
   deriving (Eq,Ord)
 
 dist :: a -> Float -> Dist a
-dist x prob = Dist x (Prob prob)
+dist x prob
+  | prob <= 1.0 = Dist x (Prob prob)
+  | otherwise   = error "dist: the probability needs to range between 0.0 and 1.0"
 
 sumDist :: Dist a -> Probability
 sumDist dists = probability $
