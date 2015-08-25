@@ -95,30 +95,30 @@ orSum = print (foldr (?)
 -- Does not work because the search space is not finite (Vertex Int)
 --
 -- TODO: Try again with `data Vertex`
+--        still doesn't terminate
 --
--- type Vertex = Int
--- edge :: Edge -> Float -> Dist Edge
--- edge vertexPair prob = dist vertexPair prob
-
 -- g1 :: WeightedGraph
--- g1 = map (uncurry edge) [((1,2),0.6)
---                         ,((1,3),0.1)
---                         ,((2,5),0.4)
---                         ,((2,6),0.3)
---                         ,((3,4),0.3)
---                         ,((4,5),0.8)
---                         ,((5,6),0.2)]
+-- g1 = map (\ ((x,y),p) -> dist (vertex x,vertex y) p)
+--          [((1,2),0.6)
+--          ,((1,3),0.1)
+--          ,((2,5),0.4)
+--          ,((2,6),0.3)
+--          ,((3,4),0.3)
+--          ,((4,5),0.8)
+--          ,((5,6),0.2)]
 
--- find :: (b -> Bool) -> [Dist (Vertex,Vertex)] -> Maybe b
+-- -- find :: (b -> Bool) -> [Dist (Vertex,Vertex)] -> Maybe b
 
--- path :: WeightedGraph -> Edge -> Dist Bool
--- path g edge = isElem edge g
--- path g (x,y) | y /= z && z `elem` map (fst . value) g = (&&) <$> isElem (x,y) g <*> path g (z,y)
+-- path1 :: WeightedGraph -> (Int,Int) -> Dist Bool
+-- path1 g (x,y) = path1' g (vertex x, vertex y)
+--  where
+--   path1' g e = isElem e g
+--   path1' g (x,y) | y /= z && z `elem` map (fst . value) g = (&&) <$> isElem (x,y) g <*> path1' g (z,y)
 -- -- path g x y = maybe False (const True) <$> map (filterDist (== (x,y))) g
 -- -- path g x y | y /= z = (\mVal bool -> maybe bool (const True) mVal) <$> (find (== (x,z)) <$> g) <*> path g z y
---  where z free
+--    where z free
 
 -- isElem :: Edge -> WeightedGraph -> Dist Bool
--- isElem edge g = case filter ((==) edge . value) g of
+-- isElem e g = case filter ((==) e . value) g of
 --                     []    -> pure False
 --                     (e:_) -> const True <$> e
