@@ -1,7 +1,7 @@
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module ShowDist
-  (showWithRescale, showLight, showWithFunction)
+  -- (showWithRescale, showLight, showWithFunction, scale)
  where 
 
 import PFLP
@@ -16,7 +16,7 @@ showLight :: (Ord a, Show a) => Dist a -> String
 showLight = showWithFunction (map sumDists)
 
 showWithRescale :: (Ord a, Show a) => Dist a -> String
-showWithRescale = showWithFunction (\xss -> map sumDists (map scale xss))
+showWithRescale = showWithFunction (\xss -> scale (map sumDists xss))
 
 showWithFunction :: (Ord a, Show a) => ([[(a,Probability)]] -> [(a,Probability)]) -> Dist a -> String
 showWithFunction f dist =
