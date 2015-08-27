@@ -14,13 +14,14 @@ module WetGrass where
 
 import BayesianNetwork
 import PFLP
-import Distributions (scale)
+import ShowDist
+
 -- -------------------------------------
 --  Example 1
 -- -------------------------------------
 
--- data Dist a      = Dist a Probability
--- type Probability = Float
+instance (Ord a,Show a) => Show (Dist a) where
+  show = showWithRescale
 
 rain :: Dist Bool
 rain = bernoulli 0.2
@@ -51,11 +52,6 @@ rainWhenGrass =
            r' |> \r ->
              grassWet s r
   in (r', True) `given` [s', g' =: True]
-
-rainSprinkler = sprinkler <| rain
-grass2 = scale [(False,0.495),(False,0.3),(True,5.0e-3),(True,0.2)] |> \s ->
-         rain |> \r ->
-         grassWet s r
 
 grassWetTrue = 
   let r' = rain

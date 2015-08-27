@@ -45,12 +45,12 @@ such an expression? %
 What is the intuition behind probability in the context of programming
 and what is its meaning? %
 
-The main goal of probabilistic programming is to open the door for a
-wide range of groups that want to evaluate probabilistic models: data
+The main goal of probabilistic programming is to open the door to the
+evaluation of probabilistic models for a wide range of users: data
 scientists, domain experts and other developers. %
 Probabilistic programming languages want to minimise the burden for
 non-experts (in the area of machine learning and co) to design their
-own model and run algorithm on their data. %
+own model and run inference algorithms on their data. %
 These languages already provide a rich set of primitives and most
 importantly inference algorithms that are built upon the results of
 experts. %
@@ -76,6 +76,11 @@ Contributions:
   representation of nondeterminsm, which enables early pruning of the
   search space, compared to Haskell's MonadPlus instance for lists,
   which is often used to model nondeterminism. %
+\item It is fair to assume that a wide range of tools existing for
+  Curry can be applied to probabilistic languaeges as well. %
+  For instance, \cite{Brassel-BIO} has already presented work on a
+  debugger for Curry that works well with nondeterminism and free
+  variables. %
 \end{itemize}
 
 \section{The Problem}
@@ -104,31 +109,38 @@ Such an evaluation can range from stating queries to documenting
 observations to apply learning algorithms. %
 
 \begin{figure}
-\caption{Bayesian network with conditional probability table for \emph{alarm}-scenario}
+\label{fig:WetGrass}
+\caption{Bayesian network with conditional probability table for
+  \emph{Wet Grass}-scenario}
 \end{figure}
 
-We can model this bayesian network with the following code. %
+We can model the bayesian network given in Figure \ref{fig:WetGrass} with the following code. %
 
 \begin{verbatim}
-earthquake = bernoulli 0.2
-burglary   = bernoulli 0.7
+rain :: Dist Bool
+rain = bernoulli 0.2
 
-alarm True  True  = bernoulli 0.9
-alarm True  False = bernoulli 0.8
-alarm False True  = bernoulli 0.1
-alarm False False = bernoulli 0.0
+sprinkler :: Bool -> Dist Bool
+sprinkler False = bernoulli 0.4
+sprinkler True  = bernoulli 0.01
+
+grassWet :: Bool -> Bool -> Dist Bool
+grassWet False False = bernoulli 0.0
+grassWet False True  = bernoulli 0.8
+grassWet True  False = bernoulli 0.9
+grassWet True  True  = bernoulli 0.99
 \end{verbatim}
 
-The definition for the probabilistic functions \code{earthquake},
-\code{burglary} and \code{alarm} follow straight-forward from the
+The definition for the probabilistic functions \code{rain},
+\code{sprinkler} and \code{grassWet} follow straight-forward from the
 scheme of the given model. %
 The function \code{bernoulli} yields a probabilistic value that is
 \code{True} with probability given by the first argument and
 \code{False} with the converse probability. %
 
 \begin{verbatim}
-bernoulli prob = mkDist True prob
-bernoulli prob = mkDist False (1.0 - prob)
+bernoulli prob = dist True prob
+bernoulli prob = dist False (1.0 - prob)
 \end{verbatim}
 
 After defining the model, we want to ask queries about certian
@@ -147,8 +159,8 @@ its probability. %
 data Probability = Prop Float
 data Dist a = Dist a Probability
 
-mkDist :: a -> Float -> Dist a
-mkDist x prob = Dist x (Prob prob)
+dist :: a -> Float -> Dist a
+dist x prob = Dist x (Prob prob)
 \end{verbatim}
 
 However, the attentive reader may notice a slight difference: the PFLP
@@ -170,8 +182,8 @@ head, tail :: Coin
 head = True
 tail = False
 
-biasedCoin = mkDist head 0.3
-biasedCoin = mkDist tail 0.7
+biasedCoin = dist head 0.3
+biasedCoin = disy tail 0.7
 \end{verbatim}
 
 Rules with overlapping patterns on the left-hand side are one way to
@@ -182,7 +194,7 @@ argument. %
 Hence, we can a define a fair coin with the following rule. %
 
 \begin{verbatim}
-fairCoin = mkDist (head ? tail) 0.5
+fairCoin = dist (head ? tail) 0.5
 \end{verbatim}
 
 Let us now take a look at the bayesian network example again. %
@@ -190,17 +202,23 @@ We have already seen the definition of the model in the
 introduction. %
 However, the more interesting part is to make queries on the given
 model that cannot be answered with the probability table itself. %
-For example, we can ask the model for the probability that a burglary
-occured given the fact that the alarm was set of. %
+For example, we can ask the model for the probability that it was
+raining when observing wet grass. %
 
 \begin{verbatim}
 -- P(B=T | A=T)
-alarmByBurglary =
-  burglary >>>= \b ->
-  earthquake >>>= \e ->
-  alarm b e >>>= \a ->
-  guard a >>>= \_ ->
-  pure b
+grassIsWet =
+  rain >>>= \r ->
+  sprinkler r >>>= \s ->
+  grassWet s r = >>>= \g ->
+  guard g >>>= \_ ->
+  pure r
+\end{verbatim}
+
+
+\begin{verbatim}
+guard :: Bool -> Dist ()
+guard True = pure ()
 \end{verbatim}
 
 \section{The Details}
