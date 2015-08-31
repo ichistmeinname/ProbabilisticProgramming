@@ -18,44 +18,57 @@ oneside, % One page layout (no page indentation)
 \end{abstract}
 
 \section{Introduction}
-There are many probabilistic languages around these days; a progress
-that started longer than a decade ago, but is currently especially
-active. %
-These languages have their origin either in functional, logic or
-imperative programming, i.e., you can choose a language based on your
-favourite paradigm. %
-Besides newly developed languages, a few libraries for probabilistic
-programming have seen the light of day as well. %
-These languages (stand-alone or DSL) all come with a handful of
-useful tools (functions and stuff) to work with probabilistic values
-and distributions as well as inference algorithms to solve
-probabilistic models that use these values and distributions. %
-That said, there is a large subset that all these languages have in
-common, dispite their different approaches on semantic, syntax as well
-as goals and range of usage, respectively. %
-This subset is rather of practical nature and not of big intereset
-from a PL researcher perspective: every good library or programming
-language needs a handful of primitives and predefined functions, but
-they are not the heart of this piece of software. %
+\begin{itemize}
+\item more and more PPL
+\item all paradigms are represented
+\item (E)DSLs as well
+\item all languages have common ground (similar primitives and
+  predefined helper functions)
+\item implementation is the heart of these ``software products'' --
+  what can be expressed?
+\item main goal of PPLs: tool for a wide range of researchers and not
+  only ML experts; minimise burden for beginners; no former background
+  on inference algorithms needed, define only model and ask queries;
+\end{itemize}
 
-In case of probabilistic programming languages and libraries, we need
-to look at the implementation of the actual semantic behaviour -- what
-can we express with probabilistic languages and how can we interpret
-such an expression? %
-What is the intuition behind probability in the context of programming
-and what is its meaning? %
+% There are many probabilistic languages around these days; a progress
+% that started longer than a decade ago, but is currently especially
+% active. %
+% These languages have their origin either in functional, logic or
+% imperative programming, i.e., you can choose a language based on your
+% favourite paradigm. %
+% Besides newly developed languages, a few libraries for probabilistic
+% programming have seen the light of day as well. %
+% These languages (stand-alone or DSL) all come with a handful of
+% useful tools (functions and stuff) to work with probabilistic values
+% and distributions as well as inference algorithms to solve
+% probabilistic models that use these values and distributions. %
+% That said, there is a large subset that all these languages have in
+% common, dispite their different approaches on semantic, syntax as well
+% as goals and range of usage, respectively. %
+% This subset is rather of practical nature and not of big intereset
+% from a PL researcher perspective: every good library or programming
+% language needs a handful of primitives and predefined functions, but
+% they are not the heart of this piece of software. %
 
-The main goal of probabilistic programming is to open the door to the
-evaluation of probabilistic models for a wide range of users: data
-scientists, domain experts and other developers. %
-Probabilistic programming languages want to minimise the burden for
-non-experts (in the area of machine learning and co) to design their
-own model and run inference algorithms on their data. %
-These languages already provide a rich set of primitives and most
-importantly inference algorithms that are built upon the results of
-experts. %
-Thus, a predefined and well-elaborated toolset simplifies the access
-to machine learning, because technical details can be ignored. %
+% In case of probabilistic programming languages and libraries, we need
+% to look at the implementation of the actual semantic behaviour -- what
+% can we express with probabilistic languages and how can we interpret
+% such an expression? %
+% What is the intuition behind probability in the context of programming
+% and what is its meaning? %
+
+% The main goal of probabilistic programming is to open the door to the
+% evaluation of probabilistic models for a wide range of users: data
+% scientists, domain experts and other developers. %
+% Probabilistic programming languages want to minimise the burden for
+% non-experts (in the area of machine learning and co) to design their
+% own model and run inference algorithms on their data. %
+% These languages already provide a rich set of primitives and most
+% importantly inference algorithms that are built upon the results of
+% experts. %
+% Thus, a predefined and well-elaborated toolset simplifies the access
+% to machine learning, because technical details can be ignored. %
 
 Contributions:
 \begin{itemize}
@@ -85,21 +98,28 @@ Contributions:
 
 \section{The Problem}
 
-Experts often state that you do not need to be a rocket scientist in
-order to make sense of research results; however, in the area of
-machine learning, beginners often face difficulties to use the tools
-and current knowledge for their own project. %
-That is, beginners need to inverse many hours to digest technical
-details before they can actually make use of top-of-the-art models and
-algorithms. %
+\begin{itemize}
+\item abstraction from actual ML problems: define only model and
+  questions
+\item give simple example for Bayesian Networks (Wet Grass, Alarm,
+  etc) and explain functions as superficial as possible
+\item point out resemblence between CPT and actual code for model
+\end{itemize}
+% Experts often state that you do not need to be a rocket scientist in
+% order to make sense of research results; however, in the area of
+% machine learning, beginners often face difficulties to use the tools
+% and current knowledge for their own project. %
+% That is, beginners need to invest many hours to digest technical
+% details before they can actually make use of top-of-the-art models and
+% algorithms. %
 
-In the field of programming languages, the community often tries to
-generalise and simplify commen concepts and repetative structures. %
-Fortunately, the rising collaboration between ML and PL communities
-has produced a number of programming languages and libraries for
-probabilistic programming that aim at minimising the obstacle to use
-practicle results of ML, thus, empower more users to apply ML
-techniques to their problems. %
+% In the field of programming languages, the community often tries to
+% generalise and simplify commen concepts and repetative structures. %
+% Fortunately, the rising collaboration between ML and PL communities
+% has produced a number of programming languages and libraries for
+% probabilistic programming that aim at minimising the obstacle to use
+% practicle results of ML, thus, empower more users to apply ML
+% techniques to their problems. %
 
 For instance, a typical problem in the field of \emph{Bayesian
   Network}s is to transfer a given model (e.g., a conditional
@@ -144,12 +164,38 @@ bernoulli prob = dist False (1.0 - prob)
 \end{verbatim}
 
 After defining the model, we want to ask queries about certian
-propoerties and probabilities, respectively. %
-The essence of probabilistic programming is to harmonise the problem
-and its analysis: we want to define both, the problem and the queries,
-in same language. %
+properties and probabilities, respectively. %
+The essence of probabilistic programming is to harmonise a problem and
+its analysis: we want to define both, the problem and the queries, in
+same language. %
 
 \section{The Idea}
+
+\begin{itemize}
+\item PPL vs DSL\\
+  Working within a host language enables us to focus on the
+  problem itself and frees us from reimplementing standard primitives
+  (IO, data structures), essential design decisions (syntax,
+  parser). %
+  % Based on which criteria do you choose the host language? %
+  % As for probabilistic languages that started growing over time,
+  % libraries that enable probablistic programming exist in the whole
+  % variety of paradigms: declarative as well as imperative. %
+  % For a start, you obviously choose the paradigm that has the clearest
+  % structure and enables straight-forward programming. %
+  % We want to address a wide range of developers and even
+  % non-PL-experts, thus, we choose a paradigm than can be learnt
+  % easily. %
+  % Thus, obvioulsy, you choose a declarative programming language. %
+  % By choosing Curry, we argue that it is sufficient to reuse built-in
+  % features in order to cover the essence of probabilistic programs,
+  % especially its semantic. %
+\item describe underlying implementation: core data types and
+  functions
+\item query simple question for example from introduction
+\item connect to Martin Erwig's PFP approach
+\item Nondeterminism and \code{SearchTree}
+\end{itemize}
 
 In the style of \cite{pfp}, the library's heart is a data type that
 represents distributions: such a distribution consists of a value and
@@ -290,30 +336,26 @@ coin = mkDist (True ? False) 0.5
   evaluated if really needed and only the parts that are essential for
   the given query, e.g., observations can rule out whole branches
   early. %
-
-\item Working within a host language enables us to focus on the
-  problem itself and frees us from reimplementing standard primitives
-  (IO, data structures), essential design decisions (syntax,
-  parser). %
-  Based on which criteria do you choose the host language? %
-  As for probabilistic languages that started growing over time,
-  libraries that enable probablistic programming exist in the whole
-  variety of paradigms: declarative as well as imperative. %
-  For a start, you obviously choose the paradigm that has the clearest
-  structure and enables straight-forward programming. %
-  We want to address a wide range of developers and even
-  non-PL-experts, thus, we choose a paradigm than can be learnt
-  easily. %
-  Thus, obvioulsy, you choose a declarative programming language. %
-  By choosing Curry, we argue that it is sufficient to reuse built-in
-  features in order to cover the essence of probabilistic programs,
-  especially its semantic. %
   
 \end{itemize}
 
 \section{Related Work}
 
+\begin{itemize}
+\item Martin Erwig (FPL)
+\item Oleg Kiselyov (HANSEI)
+\item ProbLog (on top of Prolog), AILog (debugger), Church (functional language)
+\end{itemize}
+
 \section{Conclusion and Future Work}
+\begin{itemize}
+\item SetFunctions (memory allocation; usage as ``first-class
+  citizen'', i.e., check semantics)
+\item ``outside'' nondeterminism
+\item sampling technique for nondeterministic functions in Curry
+\item reevaluate Currys semantic in constrast to Sato's distributuion semantic
+\item reactivate debugger for KiCS2/PAKCS
+\end{itemize}
 
 \bibliography{/Users/sad/Documents/Papers/used}
 \bibliographystyle{plain}
