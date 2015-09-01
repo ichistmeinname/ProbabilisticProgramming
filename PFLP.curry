@@ -10,12 +10,17 @@ infixl 4 >>>=
 data Probability = Prob Float
   deriving (Eq,Ord)
 
+prob :: Float -> Probability
+prob val
+  | val <= 1.0 && val >= 0.0 = Prob val
+  | otherwise  = error "prob: the probability needs to range between 0.0 and 1.0"
+
 data Dist a = Dist a Probability
   deriving (Eq,Ord)
 
 dist :: a -> Float -> Dist a
 dist x prob
-  | prob <= 1.0 = Dist x (Prob prob)
+  | prob <= 1.0 && prob >= 0.0 = Dist x (Prob prob)
   | otherwise   = error "dist: the probability needs to range between 0.0 and 1.0"
 
 sumDist :: Dist a -> Probability
@@ -66,14 +71,13 @@ liftA2 f dA dB = f <$> dA <*> dB
 -- Num instance
 
 instance Num Probability where
-  Prob x + Prob y = Prob (x + y)
-  Prob x * Prob y = Prob (x * y)
-  fromInteger x = Prob (fromInteger x)
+  Prob x + Prob y = prob (x + y)
+  Prob x * Prob y = prob (x * y)
+  fromInteger x = prob (fromInteger x)
 
 instance Fractional Probability where
-  Prob x / Prob y    = Prob (x / y)
-  fromFloat x = Prob x
-
+  Prob x / Prob y    = prob (x / y)
+  fromFloat x = prob x
 
 -- Smart constructors
 

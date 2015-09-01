@@ -2,7 +2,7 @@
 
 module Distributions where
 
-import PFLP (Dist(..), Probability(..))
+import PFLP (Dist(), Probability(..), dist)
 import List (sum)
 import Float (exp,i2f,pi,sqrt,(^.))
 
@@ -12,10 +12,10 @@ uniform xs = uniformInterval (foldr1 (?) xs) count
   count = length xs
 
 bernoulli :: Float -> Dist Bool
-bernoulli v = Dist True (Prob v) ? Dist False (Prob (1.0 - v))
+bernoulli v = dist True v ? dist False (1.0 - v)
 
 scale :: [(a,Float)] -> Dist a
-scale xs = foldr (\(x,p) acc -> Dist x (Prob (p/q)) ? acc) failed xs
+scale xs = foldr (\(x,p) acc -> dist x (p/q) ? acc) failed xs
  where
   q = sum (map snd xs)
 
@@ -47,4 +47,4 @@ enumValues :: (Bounded a, Enum a) => a -> [a]
 enumValues _ = [minBound .. maxBound]
 
 uniformInterval :: a -> Int -> Dist a
-uniformInterval val = Dist val . (1.0 /) . fromInteger
+uniformInterval val = dist val . (1.0 /) . fromInteger
