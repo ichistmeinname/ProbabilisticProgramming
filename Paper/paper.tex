@@ -44,9 +44,9 @@ oneside, % One page layout (no page indentation)
 % and distributions as well as inference algorithms to solve
 % probabilistic models that use these values and distributions. %
 % That said, there is a large subset that all these languages have in
-% common, dispite their different approaches on semantic, syntax as well
+% common, despite their different approaches on semantic, syntax as well
 % as goals and range of usage, respectively. %
-% This subset is rather of practical nature and not of big intereset
+% This subset is rather of practical nature and not of big interest
 % from a PL researcher perspective: every good library or programming
 % language needs a handful of primitives and predefined functions, but
 % they are not the heart of this piece of software. %
@@ -75,7 +75,7 @@ Contributions:
 \item We present \emph{PFLP} a lightweight library for probabilistic
   programming in the functional logic language Curry. %
   The library's core consists of ... data structures as well as
-  ... functions to work on these strucutres, overall the library needs
+  ... functions to work on these structures, overall the library needs
   less than 30 lines of code. %
 \item We can reduce the library code to such a minimum by reusing Curry's
   semantic. %
@@ -86,11 +86,11 @@ Contributions:
   nondeterministic values as well as corresponding built-in search
   abilities and call-time choice. %
 \item We present examples that emphasise the benefits of Curry's
-  representation of nondeterminsm, which enables early pruning of the
+  representation of nondeterminism, which enables early pruning of the
   search space, compared to Haskell's MonadPlus instance for lists,
   which is often used to model nondeterminism. %
 \item It is fair to assume that a wide range of tools existing for
-  Curry can be applied to probabilistic languaeges as well. %
+  Curry can be applied to probabilistic languages as well. %
   For instance, \cite{Brassel-BIO} has already presented work on a
   debugger for Curry that works well with nondeterminism and free
   variables. %
@@ -103,7 +103,7 @@ Contributions:
   questions
 \item give simple example for Bayesian Networks (Wet Grass, Alarm,
   etc) and explain functions as superficial as possible
-\item point out resemblence between CPT and actual code for model
+\item point out resemblance between CPT and actual code for model
 \end{itemize}
 % Experts often state that you do not need to be a rocket scientist in
 % order to make sense of research results; however, in the area of
@@ -114,11 +114,11 @@ Contributions:
 % algorithms. %
 
 % In the field of programming languages, the community often tries to
-% generalise and simplify commen concepts and repetative structures. %
+% generalise and simplify common concepts and repetitive structures. %
 % Fortunately, the rising collaboration between ML and PL communities
 % has produced a number of programming languages and libraries for
 % probabilistic programming that aim at minimising the obstacle to use
-% practicle results of ML, thus, empower more users to apply ML
+% practical results of ML, thus, empower more users to apply ML
 % techniques to their problems. %
 
 For instance, a typical problem in the field of \emph{Bayesian
@@ -163,7 +163,7 @@ bernoulli prob = dist True prob
 bernoulli prob = dist False (1.0 - prob)
 \end{verbatim}
 
-After defining the model, we want to ask queries about certian
+After defining the model, we want to ask queries about certain
 properties and probabilities, respectively. %
 The essence of probabilistic programming is to harmonise a problem and
 its analysis: we want to define both, the problem and the queries, in
@@ -179,14 +179,14 @@ same language. %
   parser). %
   % Based on which criteria do you choose the host language? %
   % As for probabilistic languages that started growing over time,
-  % libraries that enable probablistic programming exist in the whole
+  % libraries that enable probabilistic programming exist in the whole
   % variety of paradigms: declarative as well as imperative. %
   % For a start, you obviously choose the paradigm that has the clearest
   % structure and enables straight-forward programming. %
   % We want to address a wide range of developers and even
   % non-PL-experts, thus, we choose a paradigm than can be learnt
   % easily. %
-  % Thus, obvioulsy, you choose a declarative programming language. %
+  % Thus, obviously, you choose a declarative programming language. %
   % By choosing Curry, we argue that it is sufficient to reuse built-in
   % features in order to cover the essence of probabilistic programs,
   % especially its semantic. %
@@ -235,7 +235,7 @@ biasedCoin = disy tail 0.7
 Rules with overlapping patterns on the left-hand side are one way to
 define nondeterministic functions in Curry. %
 Alternatively, Curry provides an explicite choice operator \code{?}
-that chooses nondeterministicly between its first and second
+that chooses nondeterministic between its first and second
 argument. %
 Hence, we can a define a fair coin with the following rule. %
 
@@ -281,7 +281,7 @@ filterDist p d | p (value d) = d
 \end{verbatim}
 
   Such a filter is often called \emph{partial identity} and a common
-  functional logic design pattern \cite{funcLogPattern}, additionaly,
+  functional logic design pattern \cite{funcLogPattern}, additionally,
   it corresponds to notion of observing a probabilistic value and is a
   standard primitive in probabilistic programming languages. %
  
@@ -293,8 +293,8 @@ filterDist p d | p (value d) = d
   Additionally, we keep track of each decision we make in order to
   repeat a decision in case it occurs several times at different
   positions within the search tree. %
-  However, we have to distinct between values that are choosen
-  randomly values that share the decision. %
+  However, we have to distinct between values that are chosen randomly
+  values that share the decision. %
   This distinction is very natural in Curry: a let-binding forces to
   share decisions on probabilistic values. %
 
@@ -327,9 +327,9 @@ coin = mkDist (True ? False) 0.5
   (Choice True False, 0.5)\\%
 
   The definition of \code{coin'} consists of an expression with a
-  nondeterminstic choice on top-level position, whereas the definition
-  of \code{coin} generalises the common parts of the two possible
-  values and uses the nondeterminism in a deeper position. %
+  nondeterministic choice on top-level position, whereas the
+  definition of \code{coin} generalises the common parts of the two
+  possible values and uses the nondeterminism in a deeper position. %
 
 
 \item We can benefit from lazy evaluation: a given search tree is only
@@ -344,16 +344,73 @@ coin = mkDist (True ? False) 0.5
 \begin{itemize}
 \item Martin Erwig (FPL)
 \item Oleg Kiselyov (HANSEI)
-\item ProbLog (on top of Prolog), AILog (debugger), Church (functional language)
+\item ProbLog (on top of Prolog), AILog (debugger), Church (functional
+  language)
 \end{itemize}
 
 \section{Conclusion and Future Work}
+\begin{itemize}
+\item search tree can only manage weights at leaves, hence, sampling
+  is not a feasible alternative to exact inference (that is really
+  bad!)
+\item Furthermore, a big disadvantage of using Curry in contrast to
+  HANSEI is the representation of the search tree. %
+  Because of the built-in nondeterminism, we did not have to
+  reimplement such a mechanism, but we also have to stick to the
+  implementation at is. %
+  HANSEI's representation of the search tree has the advantage of
+  weighted branches, whereas Curry can only simulate distributions as
+  weighted leaves within the search tree. %
+
+\begin{verbatim}
+HANSEI
+              1.0
+        /            \
+      0.5            0.5
+    /     \        /     \
+0.25     0.25    0.3     0.2
+\end{verbatim}
+
+\begin{verbatim}
+Curry
+               .
+         /          \
+       .             .
+    /     \       /      \
+0.25     0.25   0.3      0.2
+\end{verbatim}
+
+  That is, for exact inference, both approaches have to explore the
+  whole search tree, but sampling becomes a lot more easier in HANSEI,
+  because at each branch we can prune the search tree by choosing one
+  branch and getting rid of all the others. %
+  In Curry, we cannot do that, because we do not have any information
+  about the probabilities, so in the worst-case we have to explore the
+  whole search tree to sample a value. %
+
+\item 
+\begin{quote}
+  Another point of difference will come out when we talk about memo. %
+  We need some sort of state, and that state cannot be global state. %
+  When the search is encapsulated, that state has to be be
+  encapsulated too, somehow. %
+  Hansei also supports so-called nested inference, or nested
+  encapsulated search, in Curry terms. %
+  That is, when you encapsulate search, some choices are encapsulated
+  (represented as nodes in a tree) and some choices are performed. %
+  I'm not sure Curry has support for such things. \\%
+
+--- mail correspondence with Oleg Kiselyov
+\end{quote}
+\end{itemize}
+
 \begin{itemize}
 \item SetFunctions (memory allocation; usage as ``first-class
   citizen'', i.e., check semantics)
 \item ``outside'' nondeterminism
 \item sampling technique for nondeterministic functions in Curry
-\item reevaluate Currys semantic in constrast to Sato's distributuion semantic
+\item reevaluate Currys semantic in constrast to Sato's distribution
+  semantic
 \item reactivate debugger for KiCS2/PAKCS
 \end{itemize}
 
