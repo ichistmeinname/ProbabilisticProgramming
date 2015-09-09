@@ -70,7 +70,7 @@ countSamples dA = do
   return (prepare values)
 
 countBy :: (a -> a -> Bool) -> (a -> a -> Bool) -> [a] -> [(a,Int)]
-countBy pGroup pSort = map (\xs -> (head xs, length xs)) . groupBy pGroup . sortBy pSort
+countBy pGroup pSort = map (\xs -> (head xs, length xs)) . groupBy p . sortBy pSort
 
 ---- -------------------------------------------------------
 ----  Hoeffd

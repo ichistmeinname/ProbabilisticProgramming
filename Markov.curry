@@ -19,7 +19,7 @@ condition sunny rainy foggy = dist Sunny sunny ? dist Rainy rainy ? dist Foggy f
 
 -- Example taken from https://dtai.cs.kuleuven.be/problog/tutorial.html#tut_part1_HMM
 weather :: Condition -> Day -> Dist Condition
-weather cond day = w' cond 0 day =: cond
+weather cond day = w' Sunny 0 day =: cond
  where
   w' cond day max
     | day == 0 = condition 0.5 0.5 0.0 >>>= \c -> w' c (day+1) max
